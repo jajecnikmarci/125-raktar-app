@@ -1,0 +1,486 @@
+/**
+ * Admin Panel Component
+ * Handles loan request approvals, rejections, and returns
+ */
+
+import { Loan, LoanStatus } from '../types/models';
+import { MongoDBService } from '../services/mongodb.service';
+import { getAuthService } from '../services/auth.service';
+
+export class AdminPanelComponent {
+  private mongoService: MongoDBService;
+  private authService = getAuthService();
+  private pendingLoans: Loan[] = [];
+  private activeLoans: Loan[] = [];
+  private container: HTMLElement;
+
+  constructor(containerId: string) {
+    this.mongoService = MongoDBService.getInstance();
+    const element = document.getElementById(containerId);
+    if (!element) {
+      throw new Error(`Container ${containerId} not found`);
+    }
+    this.container = element;
+  }
+
+  /**
+   * Initialize admin panel
+   */
+  async init(): Promise<void> {
+    // Check if user is admin
+    if (!this.authService.isAdmin()) {
+      this.container.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle"></i>
+          Access Denied: Admin privileges required.
+        </div>
+      `;
+      return;
+    }
+
+    await this.loadLoans();
+    this.render();
+    this.attachEventListeners();
+  }
+
+  /**
+   * Load loans from database
+   */
+  async loadLoans(): Promise<void> {
+    try {
+      this.pendingLoans = await this.mongoService.getPendingLoans();
+      this.activeLoans = await this.mongoService.getActiveLoans();
+    } catch (error) {
+      console.error('Error loading loans:', error);
+      this.showError('Failed to load loan requests.');
+    }
+  }
+
+  /**
+   * Render admin panel
+   */
+  render(): void {
+    this.container.innerHTML = `
+      <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+          <div class="col">
+            <h2><i class="bi bi-shield-check"></i> Admin Panel</h2>
+          </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="card bg-warning text-white">
+              <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-clock-history"></i> Pending Requests</h5>
+                <h2 class="mb-0">${this.pendingLoans.length}</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-info text-white">
+              <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> Active Loans</h5>
+                <h2 class="mb-0">${this.activeLoans.length}</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-success text-white">
+              <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> Total Managed</h5>
+                <h2 class="mb-0">${this.pendingLoans.length + this.activeLoans.length}</h2>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" 
+                    data-bs-target="#pending" type="button" role="tab">
+              Pending Requests
+              ${this.pendingLoans.length > 0 ? `<span class="badge bg-danger ms-2">${this.pendingLoans.length}</span>` : ''}
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="active-tab" data-bs-toggle="tab" 
+                    data-bs-target="#active" type="button" role="tab">
+              Active Loans
+              ${this.activeLoans.length > 0 ? `<span class="badge bg-info ms-2">${this.activeLoans.length}</span>` : ''}
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="adminTabsContent">
+          <!-- Pending Requests Tab -->
+          <div class="tab-pane fade show active" id="pending" role="tabpanel">
+            ${this.renderPendingRequests()}
+          </div>
+
+          <!-- Active Loans Tab -->
+          <div class="tab-pane fade" id="active" role="tabpanel">
+            ${this.renderActiveLoans()}
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejection Modal -->
+      ${this.renderRejectionModal()}
+    `;
+  }
+
+  /**
+   * Render pending requests
+   */
+  renderPendingRequests(): string {
+    if (this.pendingLoans.length === 0) {
+      return `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No pending requests at this time.
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Item</th>
+                  <th>Requested By</th>
+                  <th>Quantity</th>
+                  <th>Requested Date</th>
+                  <th>Expected Return</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.pendingLoans.map(loan => this.renderPendingRow(loan)).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render single pending request row
+   */
+  renderPendingRow(loan: Loan): string {
+    return `
+      <tr data-loan-id="${loan._id}">
+        <td>
+          <strong>${this.escapeHtml(loan.itemName)}</strong>
+        </td>
+        <td>
+          <div>${this.escapeHtml(loan.userName)}</div>
+          <small class="text-muted">${this.escapeHtml(loan.userEmail)}</small>
+        </td>
+        <td><span class="badge bg-secondary">${loan.quantity}</span></td>
+        <td>${this.formatDate(loan.requestedAt)}</td>
+        <td>${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}</td>
+        <td>
+          ${loan.notes ? `
+            <button class="btn btn-sm btn-outline-secondary" 
+                    data-bs-toggle="tooltip" 
+                    title="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-file-text"></i> View
+            </button>
+          ` : '<span class="text-muted">None</span>'}
+        </td>
+        <td>
+          <div class="btn-group" role="group">
+            <button class="btn btn-sm btn-success approve-btn" 
+                    data-loan-id="${loan._id}" 
+                    title="Approve Request">
+              <i class="bi bi-check-circle"></i> Approve
+            </button>
+            <button class="btn btn-sm btn-danger reject-btn" 
+                    data-loan-id="${loan._id}" 
+                    title="Reject Request">
+              <i class="bi bi-x-circle"></i> Reject
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  /**
+   * Render active loans
+   */
+  renderActiveLoans(): string {
+    if (this.activeLoans.length === 0) {
+      return `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No active loans at this time.
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Item</th>
+                  <th>Borrowed By</th>
+                  <th>Quantity</th>
+                  <th>Approved Date</th>
+                  <th>Expected Return</th>
+                  <th>Days Out</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.activeLoans.map(loan => this.renderActiveRow(loan)).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render single active loan row
+   */
+  renderActiveRow(loan: Loan): string {
+    const daysOut = this.calculateDaysOut(loan.approvedAt || loan.requestedAt);
+    const isOverdue = loan.expectedReturnDate && 
+                      new Date(loan.expectedReturnDate) < new Date();
+
+    return `
+      <tr data-loan-id="${loan._id}" ${isOverdue ? 'class="table-danger"' : ''}>
+        <td>
+          <strong>${this.escapeHtml(loan.itemName)}</strong>
+        </td>
+        <td>
+          <div>${this.escapeHtml(loan.userName)}</div>
+          <small class="text-muted">${this.escapeHtml(loan.userEmail)}</small>
+        </td>
+        <td><span class="badge bg-secondary">${loan.quantity}</span></td>
+        <td>${this.formatDate(loan.approvedAt || loan.requestedAt)}</td>
+        <td>
+          ${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}
+          ${isOverdue ? '<span class="badge bg-danger ms-2">OVERDUE</span>' : ''}
+        </td>
+        <td><span class="badge bg-info">${daysOut} days</span></td>
+        <td>
+          <button class="btn btn-sm btn-primary return-btn" 
+                  data-loan-id="${loan._id}" 
+                  title="Mark as Returned">
+            <i class="bi bi-box-arrow-in-left"></i> Mark Returned
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  /**
+   * Render rejection modal
+   */
+  renderRejectionModal(): string {
+    return `
+      <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title">Reject Loan Request</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="rejectLoanId">
+              <div class="mb-3">
+                <label for="rejectReason" class="form-label">
+                  Reason for Rejection (Optional)
+                </label>
+                <textarea class="form-control" id="rejectReason" rows="3" 
+                          placeholder="Provide a reason for rejecting this request..."></textarea>
+              </div>
+              <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                This action cannot be undone. The user will be notified of the rejection.
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Attach event listeners
+   */
+  attachEventListeners(): void {
+    // Approve buttons
+    document.querySelectorAll('.approve-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+        if (loanId) this.handleApprove(loanId);
+      });
+    });
+
+    // Reject buttons
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+        if (loanId) this.openRejectModal(loanId);
+      });
+    });
+
+    // Return buttons
+    document.querySelectorAll('.return-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+        if (loanId) this.handleReturn(loanId);
+      });
+    });
+
+    // Confirm reject
+    document.getElementById('confirmRejectBtn')?.addEventListener('click', () => {
+      this.handleReject();
+    });
+  }
+
+  /**
+   * Handle approve action
+   */
+  async handleApprove(loanId: string): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    if (!confirm('Approve this loan request?')) return;
+
+    try {
+      await this.mongoService.approveLoan(loanId, currentUser.uid);
+      this.showSuccess('Loan request approved successfully!');
+      await this.loadLoans();
+      this.render();
+      this.attachEventListeners();
+    } catch (error) {
+      console.error('Error approving loan:', error);
+      this.showError('Failed to approve loan request.');
+    }
+  }
+
+  /**
+   * Open reject modal
+   */
+  openRejectModal(loanId: string): void {
+    (document.getElementById('rejectLoanId') as HTMLInputElement).value = loanId;
+    (document.getElementById('rejectReason') as HTMLTextAreaElement).value = '';
+
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+  }
+
+  /**
+   * Handle reject action
+   */
+  async handleReject(): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    const loanId = (document.getElementById('rejectLoanId') as HTMLInputElement).value;
+    const reason = (document.getElementById('rejectReason') as HTMLTextAreaElement).value;
+
+    try {
+      await this.mongoService.rejectLoan(loanId, currentUser.uid, reason);
+      this.showSuccess('Loan request rejected.');
+
+      // Close modal
+      const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
+      modal?.hide();
+
+      await this.loadLoans();
+      this.render();
+      this.attachEventListeners();
+    } catch (error) {
+      console.error('Error rejecting loan:', error);
+      this.showError('Failed to reject loan request.');
+    }
+  }
+
+  /**
+   * Handle return action
+   */
+  async handleReturn(loanId: string): Promise<void> {
+    if (!confirm('Mark this item as returned?')) return;
+
+    try {
+      await this.mongoService.returnLoan(loanId);
+      this.showSuccess('Item marked as returned!');
+      await this.loadLoans();
+      this.render();
+      this.attachEventListeners();
+    } catch (error) {
+      console.error('Error returning loan:', error);
+      this.showError('Failed to mark item as returned.');
+    }
+  }
+
+  /**
+   * Calculate days out
+   */
+  calculateDaysOut(approvedDate: Date): number {
+    const approved = new Date(approvedDate);
+    const now = new Date();
+    const diff = now.getTime() - approved.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Format date
+   */
+  formatDate(date: Date | string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  /**
+   * Escape HTML
+   */
+  escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Show success message
+   */
+  showSuccess(message: string): void {
+    alert(message);
+  }
+
+  /**
+   * Show error message
+   */
+  showError(message: string): void {
+    alert(message);
+  }
+}
+
+export default AdminPanelComponent;

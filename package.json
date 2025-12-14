@@ -1,0 +1,23 @@
+{
+  "name": "inventory-lending-system",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Inventory and Lending Management System with MongoDB Atlas",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.2",
+    "bootstrap-icons": "^1.11.2",
+    "firebase": "^10.14.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "gh-pages": "^6.1.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}
