@@ -13,7 +13,8 @@ import {
   Timestamp,
   Firestore
 } from 'firebase/firestore';
-import type { Item, Loan, User } from '../types/models';
+import type { Item, Loan, User, Location, Category } from '../types/models';
+import { LoanStatus } from '../types/models';
 
 class FirestoreService {
   private db: Firestore | null = null;
@@ -283,7 +284,7 @@ class FirestoreService {
   /**
    * Create a new loan request
    */
-  async createLoan(loan: Omit<Loan, '_id' | 'requestedAt'>): Promise<Loan> {
+  async createLoan(loan: Omit<Loan, '_id' | 'requestedAt' | 'status'>): Promise<Loan> {
     try {
       const db = await this.getDb();
       const loansCol = collection(db, 'loans');
@@ -300,7 +301,7 @@ class FirestoreService {
       const newLoan = {
         ...cleanLoan,
         requestedAt: now,
-        status: 'pending' as const
+        status: LoanStatus.PENDING
       };
 
       const docRef = await addDoc(loansCol, newLoan);
@@ -311,7 +312,7 @@ class FirestoreService {
         _id: docRef.id,
         ...loan,
         requestedAt: now.toDate(),
-        status: 'pending'
+        status: LoanStatus.PENDING
       };
     } catch (error) {
       console.error('Error creating loan:', error);
@@ -484,6 +485,214 @@ class FirestoreService {
       return users;
     } catch (error) {
       console.error('Error fetching users:', error);
+      throw error;
+    }
+  }
+
+  // ==================== LOCATIONS ====================
+
+  /**
+   * Get all active locations
+   */
+  async getLocations(includeInactive = false): Promise<Location[]> {
+    try {
+      const db = await this.getDb();
+      const locationsCol = collection(db, 'locations');
+      
+      let q = query(locationsCol, orderBy('name'));
+      if (!includeInactive) {
+        q = query(locationsCol, where('isActive', '==', true), orderBy('name'));
+      }
+      
+      const snapshot = await getDocs(q);
+      const locations = snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.(),
+        updatedAt: doc.data().updatedAt?.toDate?.()
+      })) as Location[];
+
+      console.log(`✓ Fetched ${locations.length} locations from Firestore`);
+      return locations;
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new location
+   */
+  async createLocation(location: Omit<Location, '_id' | 'createdAt' | 'updatedAt'>): Promise<Location> {
+    try {
+      const db = await this.getDb();
+      const locationsCol = collection(db, 'locations');
+      const now = Timestamp.now();
+
+      const newLocation = {
+        ...location,
+        createdAt: now,
+        updatedAt: now,
+        isActive: true
+      };
+
+      const docRef = await addDoc(locationsCol, newLocation);
+      
+      console.log('✓ Location created:', docRef.id);
+      
+      return {
+        _id: docRef.id,
+        ...location,
+        createdAt: now.toDate(),
+        updatedAt: now.toDate(),
+        isActive: true
+      };
+    } catch (error) {
+      console.error('Error creating location:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a location
+   */
+  async updateLocation(locationId: string, updates: Partial<Omit<Location, '_id' | 'createdAt'>>): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const locationDoc = doc(db, 'locations', locationId);
+      
+      await updateDoc(locationDoc, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Location updated:', locationId);
+    } catch (error) {
+      console.error('Error updating location:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete (deactivate) a location
+   */
+  async deleteLocation(locationId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const locationDoc = doc(db, 'locations', locationId);
+      
+      await updateDoc(locationDoc, {
+        isActive: false,
+        updatedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Location deactivated:', locationId);
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      throw error;
+    }
+  }
+
+  // ==================== CATEGORIES ====================
+
+  /**
+   * Get all active categories
+   */
+  async getCategories(includeInactive = false): Promise<Category[]> {
+    try {
+      const db = await this.getDb();
+      const categoriesCol = collection(db, 'categories');
+      
+      let q = query(categoriesCol, orderBy('name'));
+      if (!includeInactive) {
+        q = query(categoriesCol, where('isActive', '==', true), orderBy('name'));
+      }
+      
+      const snapshot = await getDocs(q);
+      const categories = snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.(),
+        updatedAt: doc.data().updatedAt?.toDate?.()
+      })) as Category[];
+
+      console.log(`✓ Fetched ${categories.length} categories from Firestore`);
+      return categories;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new category
+   */
+  async createCategory(category: Omit<Category, '_id' | 'createdAt' | 'updatedAt'>): Promise<Category> {
+    try {
+      const db = await this.getDb();
+      const categoriesCol = collection(db, 'categories');
+      const now = Timestamp.now();
+
+      const newCategory = {
+        ...category,
+        createdAt: now,
+        updatedAt: now,
+        isActive: true
+      };
+
+      const docRef = await addDoc(categoriesCol, newCategory);
+      
+      console.log('✓ Category created:', docRef.id);
+      
+      return {
+        _id: docRef.id,
+        ...category,
+        createdAt: now.toDate(),
+        updatedAt: now.toDate(),
+        isActive: true
+      };
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a category
+   */
+  async updateCategory(categoryId: string, updates: Partial<Omit<Category, '_id' | 'createdAt'>>): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const categoryDoc = doc(db, 'categories', categoryId);
+      
+      await updateDoc(categoryDoc, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Category updated:', categoryId);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete (deactivate) a category
+   */
+  async deleteCategory(categoryId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const categoryDoc = doc(db, 'categories', categoryId);
+      
+      await updateDoc(categoryDoc, {
+        isActive: false,
+        updatedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Category deactivated:', categoryId);
+    } catch (error) {
+      console.error('Error deleting category:', error);
       throw error;
     }
   }

@@ -3,13 +3,15 @@
  * Displays inventory items in a Bootstrap table with search and filter
  */
 
-import { Item, ItemStatus } from '../types/models';
+import { Item, ItemStatus, Location, Category } from '../types/models';
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 
 export class DashboardComponent {
   private authService = getAuthService();
   private items: Item[] = [];
+  private locations: Location[] = [];
+  private categories: Category[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
@@ -24,7 +26,11 @@ export class DashboardComponent {
    * Initialize dashboard
    */
   async init(): Promise<void> {
-    await this.loadItems();
+    await Promise.all([
+      this.loadItems(),
+      this.loadLocations(),
+      this.loadCategories()
+    ]);
     this.render();
     this.attachEventListeners();
   }
@@ -42,10 +48,31 @@ export class DashboardComponent {
   }
 
   /**
+   * Load locations from database
+   */
+  async loadLocations(): Promise<void> {
+    try {
+      this.locations = await firestoreService.getLocations();
+    } catch (error) {
+      console.error('Error loading locations:', error);
+    }
+  }
+
+  /**
+   * Load categories from database
+   */
+  async loadCategories(): Promise<void> {
+    try {
+      this.categories = await firestoreService.getCategories();
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  }
+
+  /**
    * Render dashboard HTML
    */
   render(): void {
-    const currentUser = this.authService.getCurrentUser();
     const isAdmin = this.authService.isAdmin();
 
     this.container.innerHTML = `
@@ -446,6 +473,10 @@ export class DashboardComponent {
     (document.getElementById('itemId') as HTMLInputElement).value = '';
     (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Add New Item';
     
+    // Populate location and category dropdowns
+    this.populateLocationDropdown();
+    this.populateCategoryDropdown();
+    
     // Show modal
     const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
     modal.show();
@@ -464,13 +495,17 @@ export class DashboardComponent {
     const item = this.items.find(i => i._id === itemId);
     if (!item) return;
 
+    // Populate location and category dropdowns first
+    this.populateLocationDropdown();
+    this.populateCategoryDropdown();
+
     // Populate form
     (document.getElementById('itemId') as HTMLInputElement).value = item._id || '';
     (document.getElementById('itemName') as HTMLInputElement).value = item.name;
-    (document.getElementById('itemCategory') as HTMLInputElement).value = item.category || '';
+    (document.getElementById('itemCategory') as HTMLSelectElement).value = item.category || '';
     (document.getElementById('itemDescription') as HTMLTextAreaElement).value = item.description || '';
     (document.getElementById('itemQuantity') as HTMLInputElement).value = item.quantity.toString();
-    (document.getElementById('itemLocation') as HTMLInputElement).value = item.location || '';
+    (document.getElementById('itemLocation') as HTMLSelectElement).value = item.location || '';
     (document.getElementById('itemStatus') as HTMLSelectElement).value = item.status;
     (document.getElementById('itemTags') as HTMLInputElement).value = (item.tags || []).join(', ');
     (document.getElementById('itemImageUrl') as HTMLInputElement).value = item.imageUrl || '';
@@ -494,10 +529,10 @@ export class DashboardComponent {
   async handleItemSave(): Promise<void> {
     const itemId = (document.getElementById('itemId') as HTMLInputElement).value;
     const name = (document.getElementById('itemName') as HTMLInputElement).value;
-    const category = (document.getElementById('itemCategory') as HTMLInputElement).value;
+    const category = (document.getElementById('itemCategory') as HTMLSelectElement).value;
     const description = (document.getElementById('itemDescription') as HTMLTextAreaElement).value;
     const quantity = parseInt((document.getElementById('itemQuantity') as HTMLInputElement).value);
-    const location = (document.getElementById('itemLocation') as HTMLInputElement).value;
+    const location = (document.getElementById('itemLocation') as HTMLSelectElement).value;
     const status = (document.getElementById('itemStatus') as HTMLSelectElement).value as ItemStatus;
     const tagsInput = (document.getElementById('itemTags') as HTMLInputElement).value;
     const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
@@ -511,7 +546,6 @@ export class DashboardComponent {
           category,
           description,
           quantity,
-          availableQuantity: quantity, // Update available quantity too
           location,
           status,
           tags,
@@ -525,7 +559,6 @@ export class DashboardComponent {
           category,
           description,
           quantity,
-          availableQuantity: quantity,
           location,
           status,
           tags,
@@ -630,6 +663,44 @@ export class DashboardComponent {
         toastElement.remove();
       });
     }
+  }
+
+  /**
+   * Populate location dropdown
+   */
+  private populateLocationDropdown(): void {
+    const locationSelect = document.getElementById('itemLocation') as HTMLSelectElement;
+    if (!locationSelect) return;
+
+    // Clear existing options except the first one
+    locationSelect.innerHTML = '<option value="">Select a location...</option>';
+
+    // Add all active locations
+    this.locations.forEach(location => {
+      const option = document.createElement('option');
+      option.value = location.name;
+      option.textContent = location.name;
+      locationSelect.appendChild(option);
+    });
+  }
+
+  /**
+   * Populate category dropdown
+   */
+  private populateCategoryDropdown(): void {
+    const categorySelect = document.getElementById('itemCategory') as HTMLSelectElement;
+    if (!categorySelect) return;
+
+    // Clear existing options except the first one
+    categorySelect.innerHTML = '<option value="">Select a category...</option>';
+
+    // Add all active categories
+    this.categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category.name;
+      option.textContent = category.name;
+      categorySelect.appendChild(option);
+    });
   }
 }
 

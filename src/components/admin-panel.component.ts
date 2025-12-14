@@ -46,8 +46,8 @@ export class AdminPanelComponent {
    */
   async loadLoans(): Promise<void> {
     try {
-      this.pendingLoans = await firestoreService.getLoans('pending');
-      this.activeLoans = await firestoreService.getLoans('approved');
+      this.pendingLoans = await firestoreService.getLoans(LoanStatus.PENDING);
+      this.activeLoans = await firestoreService.getLoans(LoanStatus.APPROVED);
     } catch (error) {
       console.error('Error loading loans:', error);
       this.showError('Failed to load loan requests.');
