@@ -28,13 +28,40 @@ export enum UserRole {
 }
 
 /**
+ * Location Interface
+ * Represents a storage location that can be managed
+ */
+export interface Location {
+  _id?: string;
+  name: string;
+  description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isActive: boolean;
+}
+
+/**
+ * Category Interface
+ * Represents an item category that can be managed
+ */
+export interface Category {
+  _id?: string;
+  name: string;
+  description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isActive: boolean;
+}
+
+/**
  * Item Interface
  * Represents an inventory item
  */
 export interface Item {
   _id?: string;
   name: string;
-  location: string;
+  location: string; // Now references Location.name
+  category?: string; // Now references Category.name
   quantity: number;
   tags: string[];
   description: string;

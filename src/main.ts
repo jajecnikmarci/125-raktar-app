@@ -6,11 +6,13 @@
 import { getAuthService } from './services/auth.service';
 import { DashboardComponent } from './components/dashboard.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
+import { settingsComponent } from './components/settings.component';
+import { MyLoansComponent } from './components/my-loans.component';
 import { User } from './types/models';
 
 class App {
   private authService = getAuthService();
-  private currentView: 'dashboard' | 'admin' = 'dashboard';
+  private currentView: 'dashboard' | 'admin' | 'settings' | 'myloans' = 'dashboard';
 
   constructor() {
     this.init();
@@ -158,6 +160,7 @@ class App {
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
     const adminLink = document.getElementById('adminLink');
+    const settingsLink = document.getElementById('settingsLink');
 
     if (userName) userName.textContent = user.displayName;
     if (userAvatar) {
@@ -165,16 +168,20 @@ class App {
       userAvatar.alt = user.displayName;
     }
 
-    // Show admin link if user is admin
+    // Show admin links if user is admin
+    const isAdmin = this.authService.isAdmin();
     if (adminLink) {
-      adminLink.style.display = this.authService.isAdmin() ? 'block' : 'none';
+      adminLink.style.display = isAdmin ? 'block' : 'none';
+    }
+    if (settingsLink) {
+      settingsLink.style.display = isAdmin ? 'block' : 'none';
     }
   }
 
   /**
    * Navigate to view
    */
-  private navigate(view: 'dashboard' | 'admin'): void {
+  public navigate(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): void {
     // Update active nav link
     document.querySelectorAll('[data-view]').forEach(link => {
       link.classList.remove('active');
@@ -190,7 +197,7 @@ class App {
   /**
    * Load view
    */
-  private async loadView(view: 'dashboard' | 'admin'): Promise<void> {
+  private async loadView(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): Promise<void> {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
@@ -222,6 +229,34 @@ class App {
         mainContent.innerHTML = '<div id="adminContainer"></div>';
         const adminPanel = new AdminPanelComponent('adminContainer');
         await adminPanel.init();
+      } else if (view === 'settings') {
+        if (!this.authService.isAdmin()) {
+          mainContent.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle"></i>
+              Access Denied: Admin privileges required.
+            </div>
+          `;
+          return;
+        }
+        
+        const html = await settingsComponent.init();
+        mainContent.innerHTML = html;
+        settingsComponent.setupEventListeners();
+      } else if (view === 'myloans') {
+        if (!this.authService.isAuthenticated()) {
+          mainContent.innerHTML = `
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle"></i>
+              Please sign in to view your loans.
+            </div>
+          `;
+          return;
+        }
+        
+        mainContent.innerHTML = '<div id="myLoansContainer"></div>';
+        const myLoans = new MyLoansComponent('myLoansContainer');
+        await myLoans.init();
       }
     } catch (error) {
       console.error('Error loading view:', error);
@@ -235,21 +270,21 @@ class App {
   }
 
   /**
-   * Show user's loans (placeholder)
+   * Show user's loans
    */
   private showMyLoans(): void {
-    alert('My Loans view - to be implemented');
+    this.navigate('myloans');
   }
 }
 
 // Initialize app when DOM is ready
+let appInstance: App;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    new App();
+    appInstance = new App();
+    (window as any).app = appInstance;
   });
 } else {
-  new App();
+  appInstance = new App();
+  (window as any).app = appInstance;
 }
-
-// Export for debugging
-(window as any).app = App;
