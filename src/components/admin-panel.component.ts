@@ -11,6 +11,7 @@ export class AdminPanelComponent {
   private authService = getAuthService();
   private pendingLoans: Loan[] = [];
   private activeLoans: Loan[] = [];
+  private returnedLoans: Loan[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
@@ -48,6 +49,7 @@ export class AdminPanelComponent {
     try {
       this.pendingLoans = await firestoreService.getLoans(LoanStatus.PENDING);
       this.activeLoans = await firestoreService.getLoans(LoanStatus.APPROVED);
+      this.returnedLoans = await firestoreService.getLoans(LoanStatus.RETURNED);
     } catch (error) {
       console.error('Error loading loans:', error);
       this.showError('Failed to load loan requests.');
@@ -88,8 +90,8 @@ export class AdminPanelComponent {
           <div class="col-md-4">
             <div class="card bg-success text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-check-circle"></i> Total Managed</h5>
-                <h2 class="mb-0">${this.pendingLoans.length + this.activeLoans.length}</h2>
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> Returned</h5>
+                <h2 class="mb-0">${this.returnedLoans.length}</h2>
               </div>
             </div>
           </div>
@@ -111,6 +113,13 @@ export class AdminPanelComponent {
               ${this.activeLoans.length > 0 ? `<span class="badge bg-info ms-2">${this.activeLoans.length}</span>` : ''}
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="returned-tab" data-bs-toggle="tab" 
+                    data-bs-target="#returned" type="button" role="tab">
+              Returned Loans
+              ${this.returnedLoans.length > 0 ? `<span class="badge bg-success ms-2">${this.returnedLoans.length}</span>` : ''}
+            </button>
+          </li>
         </ul>
 
         <!-- Tab Content -->
@@ -123,6 +132,11 @@ export class AdminPanelComponent {
           <!-- Active Loans Tab -->
           <div class="tab-pane fade" id="active" role="tabpanel">
             ${this.renderActiveLoans()}
+          </div>
+
+          <!-- Returned Loans Tab -->
+          <div class="tab-pane fade" id="returned" role="tabpanel">
+            ${this.renderReturnedLoans()}
           </div>
         </div>
       </div>
@@ -282,6 +296,73 @@ export class AdminPanelComponent {
             <i class="bi bi-box-arrow-in-left"></i> Mark Returned
           </button>
         </td>
+      </tr>
+    `;
+  }
+
+  /**
+   * Render returned loans
+   */
+  renderReturnedLoans(): string {
+    if (this.returnedLoans.length === 0) {
+      return `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No returned loans yet.
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Item</th>
+                  <th>Borrowed By</th>
+                  <th>Quantity</th>
+                  <th>Requested</th>
+                  <th>Approved</th>
+                  <th>Returned</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.returnedLoans.map(loan => this.renderReturnedRow(loan)).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render single returned loan row
+   */
+  renderReturnedRow(loan: Loan): string {
+    const duration = this.calculateDuration(loan.approvedAt || loan.requestedAt, loan.returnedAt);
+    const wasOverdue = loan.expectedReturnDate && loan.returnedAt &&
+                       new Date(loan.returnedAt) > new Date(loan.expectedReturnDate);
+
+    return `
+      <tr data-loan-id="${loan._id}">
+        <td>
+          <strong>${this.escapeHtml(loan.itemName)}</strong>
+        </td>
+        <td>
+          <div>${this.escapeHtml(loan.userName)}</div>
+          <small class="text-muted">${this.escapeHtml(loan.userEmail)}</small>
+        </td>
+        <td><span class="badge bg-secondary">${loan.quantity}</span></td>
+        <td><small>${this.formatDate(loan.requestedAt)}</small></td>
+        <td><small>${this.formatDate(loan.approvedAt || loan.requestedAt)}</small></td>
+        <td>
+          ${this.formatDate(loan.returnedAt)}
+          ${wasOverdue ? '<span class="badge bg-warning ms-2">Was Overdue</span>' : ''}
+        </td>
+        <td><span class="badge bg-success">${duration}</span></td>
       </tr>
     `;
   }
@@ -448,6 +529,22 @@ export class AdminPanelComponent {
     const now = new Date();
     const diff = now.getTime() - approved.getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Calculate duration between two dates
+   */
+  calculateDuration(startDate?: Date, endDate?: Date): string {
+    if (!startDate || !endDate) return 'N/A';
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diff = end.getTime() - start.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return 'Same day';
+    if (days === 1) return '1 day';
+    return `${days} days`;
   }
 
   /**
