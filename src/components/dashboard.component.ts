@@ -387,7 +387,27 @@ export class DashboardComponent {
     if (!item) return;
 
     const quantity = parseInt((document.getElementById('requestQuantity') as HTMLInputElement).value);
-    const expectedReturnDate = new Date((document.getElementById('expectedReturnDate') as HTMLInputElement).value);
+    const expectedReturnDateValue = (document.getElementById('expectedReturnDate') as HTMLInputElement).value;
+    
+    // Validate expected return date
+    if (!expectedReturnDateValue) {
+      this.showError('Please select an expected return date');
+      return;
+    }
+    
+    const expectedReturnDate = new Date(expectedReturnDateValue);
+    
+    // Validate the date is valid and in the future
+    if (isNaN(expectedReturnDate.getTime())) {
+      this.showError('Invalid return date');
+      return;
+    }
+    
+    if (expectedReturnDate <= new Date()) {
+      this.showError('Return date must be in the future');
+      return;
+    }
+    
     const notes = (document.getElementById('requestNotes') as HTMLTextAreaElement).value;
 
     try {

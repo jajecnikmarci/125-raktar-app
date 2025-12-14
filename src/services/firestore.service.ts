@@ -225,9 +225,9 @@ class FirestoreService {
       
       let loansQuery;
       if (status) {
-        loansQuery = query(loansCol, where('status', '==', status), orderBy('requestDate', 'desc'));
+        loansQuery = query(loansCol, where('status', '==', status), orderBy('requestedAt', 'desc'));
       } else {
-        loansQuery = query(loansCol, orderBy('requestDate', 'desc'));
+        loansQuery = query(loansCol, orderBy('requestedAt', 'desc'));
       }
       
       const loansSnapshot = await getDocs(loansQuery);
@@ -235,9 +235,10 @@ class FirestoreService {
       const loans = loansSnapshot.docs.map(doc => ({
         _id: doc.id,
         ...doc.data(),
-        requestDate: doc.data().requestDate?.toDate?.() || new Date(),
-        approvalDate: doc.data().approvalDate?.toDate?.() || null,
-        returnDate: doc.data().returnDate?.toDate?.() || null
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        approvedAt: doc.data().approvedAt?.toDate?.() || null,
+        returnedAt: doc.data().returnedAt?.toDate?.() || null,
+        expectedReturnDate: doc.data().expectedReturnDate?.toDate?.() || null
       })) as Loan[];
 
       console.log(`✓ Fetched ${loans.length} loans from Firestore`);
@@ -258,7 +259,7 @@ class FirestoreService {
       const loansQuery = query(
         loansCol, 
         where('userId', '==', userId),
-        orderBy('requestDate', 'desc')
+        orderBy('requestedAt', 'desc')
       );
       
       const loansSnapshot = await getDocs(loansQuery);
@@ -266,9 +267,10 @@ class FirestoreService {
       const loans = loansSnapshot.docs.map(doc => ({
         _id: doc.id,
         ...doc.data(),
-        requestDate: doc.data().requestDate?.toDate?.() || new Date(),
-        approvalDate: doc.data().approvalDate?.toDate?.() || null,
-        returnDate: doc.data().returnDate?.toDate?.() || null
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        approvedAt: doc.data().approvedAt?.toDate?.() || null,
+        returnedAt: doc.data().returnedAt?.toDate?.() || null,
+        expectedReturnDate: doc.data().expectedReturnDate?.toDate?.() || null
       })) as Loan[];
 
       return loans;
@@ -281,7 +283,7 @@ class FirestoreService {
   /**
    * Create a new loan request
    */
-  async createLoan(loan: Omit<Loan, '_id' | 'requestDate'>): Promise<Loan> {
+  async createLoan(loan: Omit<Loan, '_id' | 'requestedAt'>): Promise<Loan> {
     try {
       const db = await this.getDb();
       const loansCol = collection(db, 'loans');
@@ -297,7 +299,7 @@ class FirestoreService {
       
       const newLoan = {
         ...cleanLoan,
-        requestDate: now,
+        requestedAt: now,
         status: 'pending' as const
       };
 
@@ -308,7 +310,7 @@ class FirestoreService {
       return {
         _id: docRef.id,
         ...loan,
-        requestDate: now.toDate(),
+        requestedAt: now.toDate(),
         status: 'pending'
       };
     } catch (error) {
@@ -328,7 +330,7 @@ class FirestoreService {
       await updateDoc(loanDoc, {
         status: 'approved',
         approvedBy: adminId,
-        approvalDate: Timestamp.now()
+        approvedAt: Timestamp.now()
       });
       
       console.log('✓ Loan approved:', loanId);
@@ -349,7 +351,7 @@ class FirestoreService {
       const updates: any = {
         status: 'rejected',
         approvedBy: adminId,
-        approvalDate: Timestamp.now()
+        approvedAt: Timestamp.now()
       };
       
       if (reason) {
@@ -375,7 +377,7 @@ class FirestoreService {
       
       await updateDoc(loanDoc, {
         status: 'returned',
-        returnDate: Timestamp.now()
+        returnedAt: Timestamp.now()
       });
       
       console.log('✓ Loan returned:', loanId);
