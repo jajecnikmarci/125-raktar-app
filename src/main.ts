@@ -7,11 +7,12 @@ import { getAuthService } from './services/auth.service';
 import { DashboardComponent } from './components/dashboard.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
 import { settingsComponent } from './components/settings.component';
+import { MyLoansComponent } from './components/my-loans.component';
 import { User } from './types/models';
 
 class App {
   private authService = getAuthService();
-  private currentView: 'dashboard' | 'admin' | 'settings' = 'dashboard';
+  private currentView: 'dashboard' | 'admin' | 'settings' | 'myloans' = 'dashboard';
 
   constructor() {
     this.init();
@@ -180,7 +181,7 @@ class App {
   /**
    * Navigate to view
    */
-  private navigate(view: 'dashboard' | 'admin' | 'settings'): void {
+  public navigate(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): void {
     // Update active nav link
     document.querySelectorAll('[data-view]').forEach(link => {
       link.classList.remove('active');
@@ -196,7 +197,7 @@ class App {
   /**
    * Load view
    */
-  private async loadView(view: 'dashboard' | 'admin' | 'settings'): Promise<void> {
+  private async loadView(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): Promise<void> {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
@@ -242,6 +243,20 @@ class App {
         const html = await settingsComponent.init();
         mainContent.innerHTML = html;
         settingsComponent.setupEventListeners();
+      } else if (view === 'myloans') {
+        if (!this.authService.isAuthenticated()) {
+          mainContent.innerHTML = `
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle"></i>
+              Please sign in to view your loans.
+            </div>
+          `;
+          return;
+        }
+        
+        mainContent.innerHTML = '<div id="myLoansContainer"></div>';
+        const myLoans = new MyLoansComponent('myLoansContainer');
+        await myLoans.init();
       }
     } catch (error) {
       console.error('Error loading view:', error);
@@ -255,21 +270,21 @@ class App {
   }
 
   /**
-   * Show user's loans (placeholder)
+   * Show user's loans
    */
   private showMyLoans(): void {
-    alert('My Loans view - to be implemented');
+    this.navigate('myloans');
   }
 }
 
 // Initialize app when DOM is ready
+let appInstance: App;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    new App();
+    appInstance = new App();
+    (window as any).app = appInstance;
   });
 } else {
-  new App();
+  appInstance = new App();
+  (window as any).app = appInstance;
 }
-
-// Export for debugging
-(window as any).app = App;
