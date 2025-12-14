@@ -139,8 +139,16 @@ class FirestoreService {
       const itemsCol = collection(db, 'items');
       const now = Timestamp.now();
       
+      // Remove undefined values (Firestore doesn't support them)
+      const cleanItem: any = { ...item };
+      Object.keys(cleanItem).forEach(key => {
+        if (cleanItem[key] === undefined) {
+          delete cleanItem[key];
+        }
+      });
+      
       const newItem = {
-        ...item,
+        ...cleanItem,
         createdAt: now,
         updatedAt: now
       };
@@ -169,8 +177,16 @@ class FirestoreService {
       const db = await this.getDb();
       const itemDoc = doc(db, 'items', itemId);
       
+      // Remove undefined values (Firestore doesn't support them)
+      const cleanUpdates: any = { ...updates };
+      Object.keys(cleanUpdates).forEach(key => {
+        if (cleanUpdates[key] === undefined) {
+          delete cleanUpdates[key];
+        }
+      });
+      
       await updateDoc(itemDoc, {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: Timestamp.now()
       });
       
@@ -271,8 +287,16 @@ class FirestoreService {
       const loansCol = collection(db, 'loans');
       const now = Timestamp.now();
       
+      // Remove undefined values (Firestore doesn't support them)
+      const cleanLoan: any = { ...loan };
+      Object.keys(cleanLoan).forEach(key => {
+        if (cleanLoan[key] === undefined) {
+          delete cleanLoan[key];
+        }
+      });
+      
       const newLoan = {
-        ...loan,
+        ...cleanLoan,
         requestDate: now,
         status: 'pending' as const
       };

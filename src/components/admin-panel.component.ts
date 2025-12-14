@@ -467,17 +467,53 @@ export class AdminPanelComponent {
   }
 
   /**
-   * Show success message
+   * Show success message with Bootstrap Toast
    */
   showSuccess(message: string): void {
-    alert(message);
+    this.showToast(message, 'success');
   }
 
   /**
-   * Show error message
+   * Show error message with Bootstrap Toast
    */
   showError(message: string): void {
-    alert(message);
+    this.showToast(message, 'danger');
+  }
+
+  /**
+   * Show Bootstrap Toast notification
+   */
+  private showToast(message: string, type: 'success' | 'danger' | 'warning' | 'info'): void {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+
+    const toastId = `toast-${Date.now()}`;
+    const icon = type === 'success' ? 'check-circle-fill' : 
+                 type === 'danger' ? 'exclamation-triangle-fill' : 
+                 type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
+
+    const toastHTML = `
+      <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-${icon} me-2"></i>${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    const toastElement = document.getElementById(toastId);
+    if (toastElement) {
+      const toast = new (window as any).bootstrap.Toast(toastElement, { delay: 3000 });
+      toast.show();
+      
+      // Remove from DOM after hidden
+      toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+      });
+    }
   }
 }
 

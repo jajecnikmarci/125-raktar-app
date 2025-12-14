@@ -280,16 +280,40 @@ export class DashboardComponent {
     document.getElementById('addItemBtn')?.addEventListener('click', () => {
       this.openAddItemForm();
     });
+
+    // Admin: Edit item buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const itemId = (e.currentTarget as HTMLElement).dataset.itemId;
+        if (itemId) this.openEditItemForm(itemId);
+      });
+    });
+
+    // Admin: Delete item buttons
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const itemId = (e.currentTarget as HTMLElement).dataset.itemId;
+        if (itemId) this.deleteItem(itemId);
+      });
+    });
   }
 
   /**
-   * Handle search
+   * Handle search with client-side filtering
    */
   async handleSearch(term: string): Promise<void> {
     if (term.trim().length < 2) {
       await this.loadItems();
     } else {
-      this.items = await firestoreService.getItems(); // Note: Implement client-side filtering
+      await this.loadItems(); // Load all items first
+      const searchTerm = term.toLowerCase().trim();
+      this.items = this.items.filter(item => 
+        item.name.toLowerCase().includes(searchTerm) ||
+        item.description?.toLowerCase().includes(searchTerm) ||
+        item.location?.toLowerCase().includes(searchTerm) ||
+        item.category?.toLowerCase().includes(searchTerm) ||
+        item.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+      );
     }
     this.updateTableBody();
   }
@@ -394,10 +418,132 @@ export class DashboardComponent {
   }
 
   /**
-   * Open add item form (placeholder)
+   * Open add item form
    */
   openAddItemForm(): void {
-    alert('Add Item form would open here - implement as separate component');
+    // Reset form
+    (document.getElementById('itemForm') as HTMLFormElement).reset();
+    (document.getElementById('itemId') as HTMLInputElement).value = '';
+    (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Add New Item';
+    
+    // Show modal
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
+    modal.show();
+    
+    // Attach save handler
+    const saveBtn = document.getElementById('saveItemBtn');
+    if (saveBtn) {
+      saveBtn.onclick = () => this.handleItemSave();
+    }
+  }
+
+  /**
+   * Open edit item form
+   */
+  openEditItemForm(itemId: string): void {
+    const item = this.items.find(i => i._id === itemId);
+    if (!item) return;
+
+    // Populate form
+    (document.getElementById('itemId') as HTMLInputElement).value = item._id || '';
+    (document.getElementById('itemName') as HTMLInputElement).value = item.name;
+    (document.getElementById('itemCategory') as HTMLInputElement).value = item.category || '';
+    (document.getElementById('itemDescription') as HTMLTextAreaElement).value = item.description || '';
+    (document.getElementById('itemQuantity') as HTMLInputElement).value = item.quantity.toString();
+    (document.getElementById('itemLocation') as HTMLInputElement).value = item.location || '';
+    (document.getElementById('itemStatus') as HTMLSelectElement).value = item.status;
+    (document.getElementById('itemTags') as HTMLInputElement).value = (item.tags || []).join(', ');
+    (document.getElementById('itemImageUrl') as HTMLInputElement).value = item.imageUrl || '';
+    
+    (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Edit Item';
+    
+    // Show modal
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
+    modal.show();
+    
+    // Attach save handler
+    const saveBtn = document.getElementById('saveItemBtn');
+    if (saveBtn) {
+      saveBtn.onclick = () => this.handleItemSave();
+    }
+  }
+
+  /**
+   * Handle item save (create or update)
+   */
+  async handleItemSave(): Promise<void> {
+    const itemId = (document.getElementById('itemId') as HTMLInputElement).value;
+    const name = (document.getElementById('itemName') as HTMLInputElement).value;
+    const category = (document.getElementById('itemCategory') as HTMLInputElement).value;
+    const description = (document.getElementById('itemDescription') as HTMLTextAreaElement).value;
+    const quantity = parseInt((document.getElementById('itemQuantity') as HTMLInputElement).value);
+    const location = (document.getElementById('itemLocation') as HTMLInputElement).value;
+    const status = (document.getElementById('itemStatus') as HTMLSelectElement).value as ItemStatus;
+    const tagsInput = (document.getElementById('itemTags') as HTMLInputElement).value;
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    const imageUrl = (document.getElementById('itemImageUrl') as HTMLInputElement).value;
+
+    try {
+      if (itemId) {
+        // Update existing item
+        await firestoreService.updateItem(itemId, {
+          name,
+          category,
+          description,
+          quantity,
+          availableQuantity: quantity, // Update available quantity too
+          location,
+          status,
+          tags,
+          imageUrl
+        });
+        this.showSuccess('Item updated successfully');
+      } else {
+        // Create new item
+        await firestoreService.createItem({
+          name,
+          category,
+          description,
+          quantity,
+          availableQuantity: quantity,
+          location,
+          status,
+          tags,
+          imageUrl: imageUrl || undefined
+        });
+        this.showSuccess('Item added successfully');
+      }
+
+      // Close modal
+      const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('itemModal'));
+      modal?.hide();
+
+      // Reload items
+      await this.loadItems();
+      this.updateTableBody();
+    } catch (error) {
+      console.error('Error saving item:', error);
+      this.showError('Failed to save item. Please try again.');
+    }
+  }
+
+  /**
+   * Delete item
+   */
+  async deleteItem(itemId: string): Promise<void> {
+    if (!confirm('Are you sure you want to delete this item?')) {
+      return;
+    }
+
+    try {
+      await firestoreService.deleteItem(itemId);
+      this.showSuccess('Item deleted successfully');
+      await this.loadItems();
+      this.updateTableBody();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      this.showError('Failed to delete item. Please try again.');
+    }
   }
 
   /**
@@ -417,18 +563,53 @@ export class DashboardComponent {
   }
 
   /**
-   * Show success message
+   * Show success message with Bootstrap Toast
    */
   showSuccess(message: string): void {
-    // Simple alert - replace with toast notification in production
-    alert(message);
+    this.showToast(message, 'success');
   }
 
   /**
-   * Show error message
+   * Show error message with Bootstrap Toast
    */
   showError(message: string): void {
-    alert(message);
+    this.showToast(message, 'danger');
+  }
+
+  /**
+   * Show Bootstrap Toast notification
+   */
+  private showToast(message: string, type: 'success' | 'danger' | 'warning' | 'info'): void {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+
+    const toastId = `toast-${Date.now()}`;
+    const icon = type === 'success' ? 'check-circle-fill' : 
+                 type === 'danger' ? 'exclamation-triangle-fill' : 
+                 type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
+
+    const toastHTML = `
+      <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-${icon} me-2"></i>${message}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    const toastElement = document.getElementById(toastId);
+    if (toastElement) {
+      const toast = new (window as any).bootstrap.Toast(toastElement, { delay: 3000 });
+      toast.show();
+      
+      // Remove from DOM after hidden
+      toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+      });
+    }
   }
 }
 
