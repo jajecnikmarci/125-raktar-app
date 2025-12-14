@@ -4,18 +4,16 @@
  */
 
 import { Loan, LoanStatus } from '../types/models';
-import { MongoDBService } from '../services/mongodb.service';
+import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 
 export class AdminPanelComponent {
-  private mongoService: MongoDBService;
   private authService = getAuthService();
   private pendingLoans: Loan[] = [];
   private activeLoans: Loan[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
-    this.mongoService = MongoDBService.getInstance();
     const element = document.getElementById(containerId);
     if (!element) {
       throw new Error(`Container ${containerId} not found`);
@@ -48,8 +46,8 @@ export class AdminPanelComponent {
    */
   async loadLoans(): Promise<void> {
     try {
-      this.pendingLoans = await this.mongoService.getPendingLoans();
-      this.activeLoans = await this.mongoService.getActiveLoans();
+      this.pendingLoans = await firestoreService.getLoans('pending');
+      this.activeLoans = await firestoreService.getLoans('approved');
     } catch (error) {
       console.error('Error loading loans:', error);
       this.showError('Failed to load loan requests.');
@@ -370,7 +368,7 @@ export class AdminPanelComponent {
     if (!confirm('Approve this loan request?')) return;
 
     try {
-      await this.mongoService.approveLoan(loanId, currentUser.uid);
+      await firestoreService.approveLoan(loanId, currentUser.uid);
       this.showSuccess('Loan request approved successfully!');
       await this.loadLoans();
       this.render();
@@ -403,7 +401,7 @@ export class AdminPanelComponent {
     const reason = (document.getElementById('rejectReason') as HTMLTextAreaElement).value;
 
     try {
-      await this.mongoService.rejectLoan(loanId, currentUser.uid, reason);
+      await firestoreService.rejectLoan(loanId, currentUser.uid, reason);
       this.showSuccess('Loan request rejected.');
 
       // Close modal
@@ -426,7 +424,7 @@ export class AdminPanelComponent {
     if (!confirm('Mark this item as returned?')) return;
 
     try {
-      await this.mongoService.returnLoan(loanId);
+      await firestoreService.returnLoan(loanId);
       this.showSuccess('Item marked as returned!');
       await this.loadLoans();
       this.render();

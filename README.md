@@ -17,7 +17,7 @@ A modern, full-stack inventory and lending management system built with TypeScri
 
 - **Frontend**: TypeScript, Vite, Bootstrap 5
 - **Authentication**: Firebase Auth (Google Sign-In)
-- **Database**: MongoDB Atlas (via Data API)
+- **Database**: Firebase Firestore (Real-time NoSQL)
 - **Hosting**: GitHub Pages (Static Site)
 - **Icons**: Bootstrap Icons
 
@@ -27,8 +27,7 @@ Before setting up the project, ensure you have:
 
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- [MongoDB Atlas Account](https://www.mongodb.com/cloud/atlas)
-- [Firebase Account](https://firebase.google.com/)
+- [Firebase Account](https://firebase.google.com/) (Free tier is sufficient)
 - [GitHub Account](https://github.com/)
 
 ## 🚀 Setup Instructions
@@ -53,51 +52,28 @@ npm install
 3. Enable **Authentication** → **Google Sign-In Provider**
 4. Go to **Project Settings** → **General** → Copy your web app configuration
 
-### 4. MongoDB Atlas Setup
+### 4. Firebase Firestore Setup
 
-#### Create Database and Collections
+**📖 For detailed step-by-step instructions, see [FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md)**
 
-1. Go to [MongoDB Atlas](https://cloud.mongodb.com/)
-2. Create a new cluster (or use existing)
-3. Create a database named `inventory_system`
-4. Create three collections:
+#### Quick Setup:
+
+1. In Firebase Console, enable **Firestore Database**
+2. Choose **Start in production mode**
+3. Select a location close to your users
+4. Update Security Rules (see [FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md))
+5. Collections will be created automatically on first use:
+   - `users`
    - `items`
    - `loans`
-   - `users`
 
-#### Set Up Indexes
+#### Make Yourself Admin:
 
-Run these commands in MongoDB Shell or Compass:
-
-```javascript
-// Items collection indexes
-db.items.createIndex({ "name": 1 })
-db.items.createIndex({ "status": 1 })
-db.items.createIndex({ "tags": 1 })
-
-// Loans collection indexes
-db.loans.createIndex({ "itemId": 1 })
-db.loans.createIndex({ "userId": 1 })
-db.loans.createIndex({ "status": 1 })
-db.loans.createIndex({ "requestedAt": -1 })
-
-// Users collection indexes
-db.users.createIndex({ "uid": 1 }, { unique: true })
-db.users.createIndex({ "email": 1 }, { unique: true })
-db.users.createIndex({ "role": 1 })
-```
-
-#### Enable MongoDB Data API
-
-1. In Atlas, go to **App Services**
-2. Click **Create a New App** or use existing
-3. Enable **Data API**
-4. Generate an **API Key** with read/write permissions
-5. Note your:
-   - Data API URL
-   - API Key
-   - Cluster Name
-   - Database Name
+1. Sign in to the app once with Google
+2. Go to Firebase Console → Firestore Database
+3. Find your document in the `users` collection
+4. Edit the `role` field from `"user"` to `"admin"`
+5. Refresh the app to see admin features
 
 ### 5. Environment Variables
 
@@ -107,23 +83,19 @@ db.users.createIndex({ "role": 1 })
 cp .env.example .env
 ```
 
-2. Edit `.env` and fill in your credentials:
+2. Edit `.env` and fill in your Firebase credentials:
 
 ```env
-# Firebase Configuration
+# Firebase Configuration (from Firebase Console → Project Settings)
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
-
-# MongoDB Data API Configuration
-VITE_MONGODB_DATA_API_URL=https://data.mongodb-api.com/app/your-app-id/endpoint/data/v1
-VITE_MONGODB_API_KEY=your_mongodb_api_key
-VITE_MONGODB_CLUSTER_NAME=your_cluster_name
-VITE_MONGODB_DATABASE_NAME=inventory_system
 ```
+
+**Note**: Firestore uses the same Firebase project configuration. No additional database credentials needed!
 
 ### 6. Update Vite Configuration
 
@@ -147,15 +119,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 🔐 Creating Your First Admin User
 
 1. Sign in with Google
-2. Your user will be created with the default "user" role
+2. Your user will be created in Firestore with the default "user" role
 3. Manually promote yourself to admin:
-   - Open MongoDB Atlas
-   - Navigate to `inventory_system` → `users` collection
-   - Find your user document
-   - Edit the `role` field to `"admin"`
-   - Save changes
-
-Alternatively, create a MongoDB trigger or use MongoDB Compass to update the role.
+   - Open Firebase Console → Firestore Database
+   - Navigate to the `users` collection
+   - Find your user document (look for your email)
+   - Edit the `role` field from `"user"` to `"admin"`
+   - Click **Update**
+4. Refresh the app - you'll now see the Admin Panel!
 
 ## 📁 Project Structure
 
@@ -167,7 +138,7 @@ Alternatively, create a MongoDB trigger or use MongoDB Compass to update the rol
 │   │   └── admin-panel.component.ts    # Admin approval dashboard
 │   ├── services/
 │   │   ├── auth.service.ts             # Firebase authentication
-│   │   └── mongodb.service.ts          # MongoDB CRUD operations
+│   │   └── firestore.service.ts        # Firestore database operations
 │   ├── types/
 │   │   └── models.ts                   # TypeScript interfaces
 │   └── main.ts                         # Application entry point

@@ -93,9 +93,23 @@ class App {
       await this.authService.signInWithGoogle();
       
       // Auth state change will handle the rest
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      errorDiv.textContent = 'Failed to sign in. Please try again.';
+      
+      // Use custom error message if available
+      const errorMessage = error.userMessage || error.message || 'Failed to sign in. Please try again.';
+      
+      errorDiv.innerHTML = `
+        <strong>Sign-in Failed</strong><br>
+        ${errorMessage}
+        <br><br>
+        <small>
+          <a href="TROUBLESHOOTING.md" target="_blank" class="text-white">
+            <i class="bi bi-question-circle"></i> View Troubleshooting Guide
+          </a>
+          | Check browser console (F12) for details
+        </small>
+      `;
       errorDiv.style.display = 'block';
       signInBtn.disabled = false;
       signInBtn.innerHTML = '<i class="bi bi-google me-2"></i>Sign in with Google';

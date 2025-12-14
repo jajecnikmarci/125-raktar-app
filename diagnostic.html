@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnostic Page - Inventory System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { padding: 2rem; background: #f8f9fa; }
+    .status-ok { color: #198754; }
+    .status-error { color: #dc3545; }
+    .code-block { background: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.5rem; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="bi bi-clipboard-check"></i> System Diagnostics</h1>
+    <p class="text-muted">Use this page to diagnose configuration issues</p>
+
+    <div class="card mb-3">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Environment Variables</h5>
+      </div>
+      <div class="card-body">
+        <div id="envCheck">Checking...</div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Firebase Configuration</h5>
+      </div>
+      <div class="card-body">
+        <div id="firebaseCheck">Checking...</div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">MongoDB Configuration</h5>
+      </div>
+      <div class="card-body">
+        <div id="mongoCheck">Checking...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">Quick Fixes</h5>
+      </div>
+      <div class="card-body">
+        <ul>
+          <li>✅ Ensure <code>.env</code> file exists with real values (not placeholders)</li>
+          <li>✅ Restart dev server after changing <code>.env</code></li>
+          <li>✅ Check Firebase Console: Google Sign-In is enabled</li>
+          <li>✅ Check Firebase Console: localhost is in authorized domains</li>
+          <li>✅ Clear browser cache and cookies</li>
+          <li>✅ Allow popups for localhost</li>
+        </ul>
+        <a href="/" class="btn btn-primary">← Back to App</a>
+        <a href="TROUBLESHOOTING.md" class="btn btn-secondary" target="_blank">📖 Full Troubleshooting Guide</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Check Environment Variables
+    const envVars = [
+      'VITE_FIREBASE_API_KEY',
+      'VITE_FIREBASE_AUTH_DOMAIN',
+      'VITE_FIREBASE_PROJECT_ID',
+      'VITE_FIREBASE_STORAGE_BUCKET',
+      'VITE_FIREBASE_MESSAGING_SENDER_ID',
+      'VITE_FIREBASE_APP_ID',
+      'VITE_MONGODB_DATA_API_URL',
+      'VITE_MONGODB_API_KEY',
+      'VITE_MONGODB_CLUSTER_NAME',
+      'VITE_MONGODB_DATABASE_NAME'
+    ];
+
+    let envCheckHtml = '<ul class="mb-0">';
+    let allEnvOk = true;
+    
+    envVars.forEach(varName => {
+      const value = import.meta.env[varName];
+      const isSet = value && value !== 'undefined' && !value.startsWith('your_');
+      const icon = isSet ? '<i class="bi bi-check-circle-fill status-ok"></i>' : '<i class="bi bi-x-circle-fill status-error"></i>';
+      const status = isSet ? 'Set' : 'Missing or Invalid';
+      
+      envCheckHtml += `<li>${icon} <strong>${varName}:</strong> ${status}</li>`;
+      
+      if (!isSet) allEnvOk = false;
+    });
+    
+    envCheckHtml += '</ul>';
+    
+    if (!allEnvOk) {
+      envCheckHtml += '<div class="alert alert-danger mt-3 mb-0"><strong>Action Required:</strong> Update your <code>.env</code> file with real values and restart the dev server.</div>';
+    }
+    
+    document.getElementById('envCheck').innerHTML = envCheckHtml;
+
+    // Check Firebase
+    const firebaseConfig = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    };
+
+    let firebaseCheckHtml = '<ul class="mb-0">';
+    let allFirebaseOk = true;
+
+    Object.entries(firebaseConfig).forEach(([key, value]) => {
+      const isValid = value && value !== 'undefined' && !value.startsWith('your_');
+      const icon = isValid ? '<i class="bi bi-check-circle-fill status-ok"></i>' : '<i class="bi bi-x-circle-fill status-error"></i>';
+      
+      firebaseCheckHtml += `<li>${icon} <strong>${key}:</strong> ${isValid ? 'Valid' : 'Invalid'}</li>`;
+      
+      if (!isValid) allFirebaseOk = false;
+    });
+
+    firebaseCheckHtml += '</ul>';
+
+    if (allFirebaseOk) {
+      firebaseCheckHtml += '<div class="alert alert-success mt-3 mb-0"><i class="bi bi-check-circle"></i> Firebase configuration looks good!</div>';
+    } else {
+      firebaseCheckHtml += '<div class="alert alert-danger mt-3 mb-0"><strong>Action Required:</strong> Check your Firebase Console and copy the correct values to <code>.env</code></div>';
+    }
+
+    document.getElementById('firebaseCheck').innerHTML = firebaseCheckHtml;
+
+    // Check MongoDB
+    const mongoConfig = {
+      'Data API URL': import.meta.env.VITE_MONGODB_DATA_API_URL,
+      'API Key': import.meta.env.VITE_MONGODB_API_KEY,
+      'Cluster Name': import.meta.env.VITE_MONGODB_CLUSTER_NAME,
+      'Database Name': import.meta.env.VITE_MONGODB_DATABASE_NAME,
+    };
+
+    let mongoCheckHtml = '<ul class="mb-0">';
+    let allMongoOk = true;
+
+    Object.entries(mongoConfig).forEach(([key, value]) => {
+      const isValid = value && value !== 'undefined' && !value.startsWith('your_');
+      const icon = isValid ? '<i class="bi bi-check-circle-fill status-ok"></i>' : '<i class="bi bi-x-circle-fill status-error"></i>';
+      
+      mongoCheckHtml += `<li>${icon} <strong>${key}:</strong> ${isValid ? 'Set' : 'Missing'}</li>`;
+      
+      if (!isValid) allMongoOk = false;
+    });
+
+    mongoCheckHtml += '</ul>';
+
+    if (allMongoOk) {
+      mongoCheckHtml += '<div class="alert alert-success mt-3 mb-0"><i class="bi bi-check-circle"></i> MongoDB configuration looks good!</div>';
+    } else {
+      mongoCheckHtml += '<div class="alert alert-danger mt-3 mb-0"><strong>Action Required:</strong> Set up MongoDB Atlas Data API and copy values to <code>.env</code></div>';
+    }
+
+    document.getElementById('mongoCheck').innerHTML = mongoCheckHtml;
+
+    // Summary
+    if (allEnvOk && allFirebaseOk && allMongoOk) {
+      console.log('%c✓ All Configuration Checks Passed!', 'color: green; font-size: 16px; font-weight: bold;');
+      console.log('If you\'re still having issues, check:');
+      console.log('1. Firebase Console: Google Sign-In is enabled');
+      console.log('2. Firebase Console: localhost is authorized');
+      console.log('3. Browser: Popups are allowed');
+      console.log('4. Browser: Third-party cookies are enabled');
+    } else {
+      console.log('%c❌ Configuration Issues Found', 'color: red; font-size: 16px; font-weight: bold;');
+      console.log('See diagnostic page for details');
+    }
+  </script>
+</body>
+</html>

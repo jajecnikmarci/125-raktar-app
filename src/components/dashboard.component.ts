@@ -4,17 +4,15 @@
  */
 
 import { Item, ItemStatus } from '../types/models';
-import { MongoDBService } from '../services/mongodb.service';
+import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 
 export class DashboardComponent {
-  private mongoService: MongoDBService;
   private authService = getAuthService();
   private items: Item[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
-    this.mongoService = MongoDBService.getInstance();
     const element = document.getElementById(containerId);
     if (!element) {
       throw new Error(`Container ${containerId} not found`);
@@ -36,7 +34,7 @@ export class DashboardComponent {
    */
   async loadItems(): Promise<void> {
     try {
-      this.items = await this.mongoService.getItems();
+      this.items = await firestoreService.getItems();
     } catch (error) {
       console.error('Error loading items:', error);
       this.showError('Failed to load items. Please try again.');
@@ -141,14 +139,14 @@ export class DashboardComponent {
         <td>
           <strong>${this.escapeHtml(item.name)}</strong>
           <br>
-          <small class="text-muted">${this.escapeHtml(item.description)}</small>
+          <small class="text-muted">${this.escapeHtml(item.description || '')}</small>
         </td>
-        <td><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location)}</td>
+        <td><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location || '')}</td>
         <td>
-          <span class="badge bg-secondary">${item.quantity}</span>
+          <span class="badge bg-secondary">${item.quantity || 0}</span>
         </td>
         <td>
-          ${item.tags.map(tag => 
+          ${(item.tags || []).map(tag => 
             `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
           ).join('')}
         </td>
@@ -291,7 +289,7 @@ export class DashboardComponent {
     if (term.trim().length < 2) {
       await this.loadItems();
     } else {
-      this.items = await this.mongoService.searchItems(term);
+      this.items = await firestoreService.getItems(); // Note: Implement client-side filtering
     }
     this.updateTableBody();
   }
@@ -369,7 +367,7 @@ export class DashboardComponent {
     const notes = (document.getElementById('requestNotes') as HTMLTextAreaElement).value;
 
     try {
-      await this.mongoService.createLoanRequest({
+      await firestoreService.createLoan({
         itemId: item._id!,
         itemName: item.name,
         userId: currentUser.uid,

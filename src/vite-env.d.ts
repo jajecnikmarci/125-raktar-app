@@ -11,9 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
   readonly VITE_FIREBASE_APP_ID: string;
 
-  // MongoDB Data API Configuration
-  readonly VITE_MONGODB_DATA_API_URL: string;
-  readonly VITE_MONGODB_API_KEY: string;
+  // MongoDB Realm Configuration
+  readonly VITE_MONGODB_REALM_APP_ID: string;
   readonly VITE_MONGODB_CLUSTER_NAME: string;
   readonly VITE_MONGODB_DATABASE_NAME: string;
 }

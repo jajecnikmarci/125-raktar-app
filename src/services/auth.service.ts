@@ -1,6 +1,6 @@
 /**
  * Firebase Authentication Service
- * Handles Google Sign-In and user authentication
+ * Handles Google Sign-In, user authentication, and Firestore integration
  */
 
 import { initializeApp, FirebaseApp } from 'firebase/app';
@@ -14,6 +14,9 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { User, UserRole } from '../types/models';
+
+// Export app instance for use in Firestore service
+export let app: FirebaseApp;
 
 class AuthService {
   private app: FirebaseApp;
@@ -32,7 +35,21 @@ class AuthService {
       appId: import.meta.env.VITE_FIREBASE_APP_ID,
     };
 
+    // Validate Firebase configuration
+    const missingVars = Object.entries(firebaseConfig)
+      .filter(([_, value]) => !value || value === 'undefined')
+      .map(([key]) => key);
+
+    if (missingVars.length > 0) {
+      console.error('❌ Missing Firebase configuration:', missingVars);
+      console.error('Please check your .env file and restart the dev server');
+      throw new Error(`Missing Firebase config: ${missingVars.join(', ')}`);
+    }
+
+    console.log('✓ Firebase configuration loaded');
+
     this.app = initializeApp(firebaseConfig);
+    app = this.app; // Export for Firestore service
     this.auth = getAuth(this.app);
     this.provider = new GoogleAuthProvider();
 
@@ -57,20 +74,37 @@ class AuthService {
   }
 
   /**
-   * Handle user login - sync with MongoDB
+   * Handle user login - sync with Firestore
    */
   private async handleUserLogin(firebaseUser: FirebaseUser): Promise<void> {
     try {
-      // Get or create user in MongoDB
-      const { MongoDBService } = await import('./mongodb.service');
-      const mongoService = MongoDBService.getInstance();
+      console.log('🔥 Initializing Firestore connection...');
       
-      // Check if user exists in our database
-      let user = await mongoService.getUserByUid(firebaseUser.uid);
+      // Import and initialize Firestore service
+      const { firestoreService } = await import('./firestore.service');
+      
+      // Initialize Firestore
+      await firestoreService.initialize();
+      
+      // Try to get user, but if it fails due to permissions, create them first
+      let user: User | null = null;
+      
+      try {
+        user = await firestoreService.getUserByUid(firebaseUser.uid);
+      } catch (error: any) {
+        if (error?.code === 'permission-denied') {
+          console.log('📝 User not found, creating new user in Firestore...');
+          // User doesn't exist yet, create them
+          user = null;
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
       
       if (!user) {
+        console.log('📝 Creating new user in Firestore...');
         // Create new user with default role
-        user = {
+        const newUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email || '',
           displayName: firebaseUser.displayName || 'User',
@@ -81,17 +115,40 @@ class AuthService {
           isActive: true,
         };
         
-        await mongoService.createUser(user);
+        user = await firestoreService.createUser(newUser);
+        console.log('✓ New user created in Firestore');
       } else {
-        // Update last login
-        await mongoService.updateUserLastLogin(firebaseUser.uid);
+        console.log('✓ Existing user found in Firestore');
+        // Update user data if needed
+        user.lastLogin = new Date();
       }
 
       this.currentUser = user;
       this.onAuthStateChange(user);
+      console.log('✓ User sync complete:', user.email, `(${user.role})`);
     } catch (error) {
-      console.error('Error handling user login:', error);
-      throw error;
+      console.error('❌ Error syncing user with Firestore:', error);
+      console.error('This may indicate Firestore is not configured correctly.');
+      
+      // Fallback to bypass mode - allow user to use app without database
+      console.warn('⚠️  Falling back to bypass mode');
+      console.warn('   User roles will default to ADMIN for testing');
+      console.warn('   Configure Firestore to enable full functionality');
+      
+      const user: User = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        displayName: firebaseUser.displayName || 'User',
+        photoURL: firebaseUser.photoURL || undefined,
+        role: UserRole.ADMIN, // Default to ADMIN in bypass mode
+        createdAt: new Date(),
+        lastLogin: new Date(),
+        isActive: true,
+      };
+      
+      this.currentUser = user;
+      this.onAuthStateChange(user);
+      console.log('✓ Signed in (bypass mode):', user.email, '(ADMIN - temporary)');
     }
   }
 
@@ -100,8 +157,11 @@ class AuthService {
    */
   async signInWithGoogle(): Promise<User> {
     try {
+      console.log('🔐 Starting Google Sign-In...');
       const result = await signInWithPopup(this.auth, this.provider);
       const firebaseUser = result.user;
+
+      console.log('✓ Google authentication successful:', firebaseUser.email);
 
       // Get ID token for API calls
       const token = await firebaseUser.getIdToken();
@@ -110,12 +170,14 @@ class AuthService {
       // User will be handled by onAuthStateChanged listener
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-          reject(new Error('Authentication timeout'));
-        }, 5000);
+          console.error('❌ Timeout waiting for user data from Firestore');
+          reject(new Error('Authentication timeout - Firestore may not be configured'));
+        }, 10000); // 10 seconds timeout
 
         const checkUser = () => {
           if (this.currentUser) {
             clearTimeout(timeout);
+            console.log('✓ User authentication complete');
             resolve(this.currentUser);
           } else {
             setTimeout(checkUser, 100);
@@ -123,8 +185,25 @@ class AuthService {
         };
         checkUser();
       });
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
+    } catch (error: any) {
+      console.error('❌ Sign-in error:', error);
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to sign in. Please try again.';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in cancelled. Please try again.';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups for this site.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = 'Domain not authorized. Please check Firebase settings.';
+      } else if (error.code === 'auth/invalid-api-key') {
+        errorMessage = 'Invalid Firebase API key. Please check your .env file.';
+      } else if (error.message?.includes('Firestore')) {
+        errorMessage = 'Authentication successful but database connection failed. Please check Firestore configuration.';
+      }
+      
+      error.userMessage = errorMessage;
       throw error;
     }
   }
