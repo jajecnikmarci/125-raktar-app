@@ -328,34 +328,39 @@ export class AdminPanelComponent {
    * Attach event listeners
    */
   attachEventListeners(): void {
-    // Approve buttons
+    // Approve buttons - use onclick to avoid duplicates
     document.querySelectorAll('.approve-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+      const loanId = (btn as HTMLElement).dataset.loanId;
+      (btn as HTMLElement).onclick = () => {
         if (loanId) this.handleApprove(loanId);
-      });
+      };
     });
 
-    // Reject buttons
+    // Reject buttons - use onclick to avoid duplicates
     document.querySelectorAll('.reject-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+      const loanId = (btn as HTMLElement).dataset.loanId;
+      (btn as HTMLElement).onclick = () => {
         if (loanId) this.openRejectModal(loanId);
-      });
+      };
     });
 
-    // Return buttons
+    // Return buttons - use onclick to avoid duplicates
     document.querySelectorAll('.return-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const loanId = (e.currentTarget as HTMLElement).dataset.loanId;
+      const loanId = (btn as HTMLElement).dataset.loanId;
+      (btn as HTMLElement).onclick = () => {
         if (loanId) this.handleReturn(loanId);
-      });
+      };
     });
 
-    // Confirm reject
-    document.getElementById('confirmRejectBtn')?.addEventListener('click', () => {
-      this.handleReject();
-    });
+    // Confirm reject - remove old listeners
+    const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+    if (confirmRejectBtn) {
+      const newConfirmRejectBtn = confirmRejectBtn.cloneNode(true);
+      confirmRejectBtn.parentNode?.replaceChild(newConfirmRejectBtn, confirmRejectBtn);
+      newConfirmRejectBtn.addEventListener('click', () => {
+        this.handleReject();
+      });
+    }
   }
 
   /**

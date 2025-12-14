@@ -94,6 +94,24 @@ service cloud.firestore {
       // Only admins can delete loans
       allow delete: if isAdmin();
     }
+    
+    // Locations collection (for dynamic location management)
+    match /locations/{locationId} {
+      // Everyone authenticated can read locations
+      allow read: if isSignedIn();
+      
+      // Only admins can create, update, or delete locations
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Categories collection (for dynamic category management)
+    match /categories/{categoryId} {
+      // Everyone authenticated can read categories
+      allow read: if isSignedIn();
+      
+      // Only admins can create, update, or delete categories
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
 ```
@@ -105,6 +123,8 @@ service cloud.firestore {
 - **Users Collection**: Users can only read/update their own profile. Admins can manage all users.
 - **Items Collection**: Everyone can view items, but only admins can add/edit/delete them.
 - **Loans Collection**: Users can see their own loan requests and create new ones. Only admins can approve/reject/manage all loans.
+- **Locations Collection**: Everyone can view locations, but only admins can add/edit/delete them.
+- **Categories Collection**: Everyone can view categories, but only admins can add/edit/delete them.
 
 ## Step 3: Create Firestore Collections
 
@@ -113,10 +133,12 @@ Firestore creates collections automatically when you add the first document. How
 ### Create Collections
 
 1. In Firestore Database, click **Start collection**
-2. Create three collections:
+2. Create five collections:
    - `users`
    - `items`
    - `loans`
+   - `locations`
+   - `categories`
 
 ### Add Sample Data (Optional)
 

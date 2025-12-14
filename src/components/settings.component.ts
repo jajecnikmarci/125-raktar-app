@@ -219,25 +219,36 @@ export class SettingsComponent {
    * Setup event listeners
    */
   setupEventListeners(): void {
-    // Add Location button
-    document.getElementById('addLocationBtn')?.addEventListener('click', () => {
-      this.openLocationModal();
-    });
+    // Remove existing listeners by cloning and replacing nodes
+    const addLocationBtn = document.getElementById('addLocationBtn');
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    const saveCategoryBtn = document.getElementById('saveCategoryBtn');
 
-    // Add Category button
-    document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
-      this.openCategoryModal();
-    });
+    // Clone and replace to remove all existing listeners
+    if (addLocationBtn) {
+      const newAddLocationBtn = addLocationBtn.cloneNode(true);
+      addLocationBtn.parentNode?.replaceChild(newAddLocationBtn, addLocationBtn);
+      newAddLocationBtn.addEventListener('click', () => this.openLocationModal());
+    }
 
-    // Save Location button
-    document.getElementById('saveLocationBtn')?.addEventListener('click', () => {
-      this.handleLocationSave();
-    });
+    if (addCategoryBtn) {
+      const newAddCategoryBtn = addCategoryBtn.cloneNode(true);
+      addCategoryBtn.parentNode?.replaceChild(newAddCategoryBtn, addCategoryBtn);
+      newAddCategoryBtn.addEventListener('click', () => this.openCategoryModal());
+    }
 
-    // Save Category button
-    document.getElementById('saveCategoryBtn')?.addEventListener('click', () => {
-      this.handleCategorySave();
-    });
+    if (saveLocationBtn) {
+      const newSaveLocationBtn = saveLocationBtn.cloneNode(true);
+      saveLocationBtn.parentNode?.replaceChild(newSaveLocationBtn, saveLocationBtn);
+      newSaveLocationBtn.addEventListener('click', () => this.handleLocationSave());
+    }
+
+    if (saveCategoryBtn) {
+      const newSaveCategoryBtn = saveCategoryBtn.cloneNode(true);
+      saveCategoryBtn.parentNode?.replaceChild(newSaveCategoryBtn, saveCategoryBtn);
+      newSaveCategoryBtn.addEventListener('click', () => this.handleCategorySave());
+    }
   }
 
   /**

@@ -279,49 +279,72 @@ export class DashboardComponent {
   attachEventListeners(): void {
     // Search
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-    searchInput?.addEventListener('input', (e) => {
-      this.handleSearch((e.target as HTMLInputElement).value);
-    });
+    if (searchInput) {
+      const newSearchInput = searchInput.cloneNode(true) as HTMLInputElement;
+      searchInput.parentNode?.replaceChild(newSearchInput, searchInput);
+      newSearchInput.addEventListener('input', (e) => {
+        this.handleSearch((e.target as HTMLInputElement).value);
+      });
+    }
 
     // Filters
     const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
     const locationFilter = document.getElementById('locationFilter') as HTMLSelectElement;
     
-    statusFilter?.addEventListener('change', () => this.applyFilters());
-    locationFilter?.addEventListener('change', () => this.applyFilters());
+    if (statusFilter) {
+      const newStatusFilter = statusFilter.cloneNode(true) as HTMLSelectElement;
+      statusFilter.parentNode?.replaceChild(newStatusFilter, statusFilter);
+      newStatusFilter.addEventListener('change', () => this.applyFilters());
+    }
+    
+    if (locationFilter) {
+      const newLocationFilter = locationFilter.cloneNode(true) as HTMLSelectElement;
+      locationFilter.parentNode?.replaceChild(newLocationFilter, locationFilter);
+      newLocationFilter.addEventListener('change', () => this.applyFilters());
+    }
 
-    // Request buttons
+    // Request buttons (inline onclick is better for dynamic content)
     document.querySelectorAll('.request-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const itemId = (e.currentTarget as HTMLElement).dataset.itemId;
+      const itemId = (btn as HTMLElement).dataset.itemId;
+      (btn as HTMLElement).onclick = () => {
         if (itemId) this.openRequestModal(itemId);
-      });
+      };
     });
 
-    // Submit request
-    document.getElementById('submitRequestBtn')?.addEventListener('click', () => {
-      this.handleRequestSubmit();
-    });
+    // Submit request button - remove old listeners
+    const submitRequestBtn = document.getElementById('submitRequestBtn');
+    if (submitRequestBtn) {
+      const newSubmitRequestBtn = submitRequestBtn.cloneNode(true);
+      submitRequestBtn.parentNode?.replaceChild(newSubmitRequestBtn, submitRequestBtn);
+      newSubmitRequestBtn.addEventListener('click', () => {
+        this.handleRequestSubmit();
+      });
+    }
 
     // Admin: Add item
-    document.getElementById('addItemBtn')?.addEventListener('click', () => {
-      this.openAddItemForm();
-    });
+    const addItemBtn = document.getElementById('addItemBtn');
+    if (addItemBtn) {
+      const newAddItemBtn = addItemBtn.cloneNode(true);
+      addItemBtn.parentNode?.replaceChild(newAddItemBtn, addItemBtn);
+      newAddItemBtn.addEventListener('click', () => {
+        this.openAddItemForm();
+      });
+    }
 
     // Admin: Edit item buttons
     document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const itemId = (e.currentTarget as HTMLElement).dataset.itemId;
+      const itemId = (btn as HTMLElement).dataset.itemId;
+      (btn as HTMLElement).onclick = () => {
         if (itemId) this.openEditItemForm(itemId);
-      });
+      };
     });
 
     // Admin: Delete item buttons
     document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const itemId = (e.currentTarget as HTMLElement).dataset.itemId;
+      const itemId = (btn as HTMLElement).dataset.itemId;
+      (btn as HTMLElement).onclick = () => {
         if (itemId) this.deleteItem(itemId);
-      });
+      };
     });
   }
 
