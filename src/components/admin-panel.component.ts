@@ -359,7 +359,7 @@ export class AdminPanelComponent {
         <td><small>${this.formatDate(loan.requestedAt)}</small></td>
         <td><small>${this.formatDate(loan.approvedAt || loan.requestedAt)}</small></td>
         <td>
-          ${this.formatDate(loan.returnedAt)}
+          ${loan.returnedAt ? this.formatDate(loan.returnedAt) : 'N/A'}
           ${wasOverdue ? '<span class="badge bg-warning ms-2">Was Overdue</span>' : ''}
         </td>
         <td><span class="badge bg-success">${duration}</span></td>
