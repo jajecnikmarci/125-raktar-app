@@ -14,6 +14,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { User, UserRole } from '../types/models';
+import { firebaseConfig } from '../config/firebase.config';
 
 // Export app instance for use in Firestore service
 export let app: FirebaseApp;
@@ -25,27 +26,7 @@ class AuthService {
   private currentUser: User | null = null;
 
   constructor() {
-    // Initialize Firebase with environment variables
-    const firebaseConfig = {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    };
-
-    // Validate Firebase configuration
-    const missingVars = Object.entries(firebaseConfig)
-      .filter(([_, value]) => !value || value === 'undefined')
-      .map(([key]) => key);
-
-    if (missingVars.length > 0) {
-      console.error('❌ Missing Firebase configuration:', missingVars);
-      console.error('Please check your .env file and restart the dev server');
-      throw new Error(`Missing Firebase config: ${missingVars.join(', ')}`);
-    }
-
+    // Initialize Firebase with configuration (with fallback values for GitHub Pages)
     console.log('✓ Firebase configuration loaded');
 
     this.app = initializeApp(firebaseConfig);
