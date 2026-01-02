@@ -459,9 +459,9 @@ export class AdminPanelComponent {
       await this.loadLoans();
       this.render();
       this.attachEventListeners();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving loan:', error);
-      this.showError('Failed to approve loan request.');
+      this.showError(error?.message || 'Failed to approve loan request.');
     }
   }
 
@@ -515,9 +515,9 @@ export class AdminPanelComponent {
       await this.loadLoans();
       this.render();
       this.attachEventListeners();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error returning loan:', error);
-      this.showError('Failed to mark item as returned.');
+      this.showError(error?.message || 'Failed to mark item as returned.');
     }
   }
 

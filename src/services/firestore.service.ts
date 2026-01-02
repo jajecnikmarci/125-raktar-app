@@ -251,6 +251,37 @@ class FirestoreService {
   }
 
   /**
+   * Get loans for a specific item
+   */
+  async getLoansByItem(itemId: string): Promise<Loan[]> {
+    try {
+      const db = await this.getDb();
+      const loansCol = collection(db, 'loans');
+      const loansQuery = query(
+        loansCol, 
+        where('itemId', '==', itemId),
+        orderBy('requestedAt', 'desc')
+      );
+      
+      const loansSnapshot = await getDocs(loansQuery);
+      
+      const loans = loansSnapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        approvedAt: doc.data().approvedAt?.toDate?.() || null,
+        returnedAt: doc.data().returnedAt?.toDate?.() || null,
+        expectedReturnDate: doc.data().expectedReturnDate?.toDate?.() || null
+      })) as Loan[];
+
+      return loans;
+    } catch (error) {
+      console.error('Error fetching item loans:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get loans for a specific user
    */
   async getUserLoans(userId: string): Promise<Loan[]> {
@@ -321,20 +352,46 @@ class FirestoreService {
   }
 
   /**
-   * Approve a loan request
+   * Approve a loan request and decrease inventory quantity
    */
   async approveLoan(loanId: string, adminId: string): Promise<void> {
     try {
       const db = await this.getDb();
       const loanDoc = doc(db, 'loans', loanId);
       
+      // Get the loan details first to know quantity and item
+      const loanSnapshot = await getDoc(loanDoc);
+      if (!loanSnapshot.exists()) {
+        throw new Error('Loan not found');
+      }
+      const loanData = loanSnapshot.data() as Loan;
+
+      // Get the item to check availability
+      const itemDoc = doc(db, 'items', loanData.itemId);
+      const itemSnapshot = await getDoc(itemDoc);
+      if (!itemSnapshot.exists()) {
+        throw new Error('Item not found');
+      }
+      const itemData = itemSnapshot.data() as Item;
+
+      if (itemData.quantity < loanData.quantity) {
+        throw new Error(`Insufficient quantity. Available: ${itemData.quantity}, Requested: ${loanData.quantity}`);
+      }
+
+      // Update item quantity
+      await updateDoc(itemDoc, {
+        quantity: itemData.quantity - loanData.quantity,
+        updatedAt: Timestamp.now()
+      });
+
+      // Approve loan
       await updateDoc(loanDoc, {
         status: 'approved',
         approvedBy: adminId,
         approvedAt: Timestamp.now()
       });
       
-      console.log('✓ Loan approved:', loanId);
+      console.log('✓ Loan approved and inventory updated:', loanId);
     } catch (error) {
       console.error('Error approving loan:', error);
       throw error;
@@ -369,19 +426,44 @@ class FirestoreService {
   }
 
   /**
-   * Mark a loan as returned
+   * Mark a loan as returned and increase inventory quantity
    */
   async returnLoan(loanId: string): Promise<void> {
     try {
       const db = await this.getDb();
       const loanDoc = doc(db, 'loans', loanId);
+
+      // Get the loan details
+      const loanSnapshot = await getDoc(loanDoc);
+      if (!loanSnapshot.exists()) {
+        throw new Error('Loan not found');
+      }
+      const loanData = loanSnapshot.data() as Loan;
+
+      if (loanData.status === 'returned') {
+         throw new Error('Loan is already returned');
+      }
+
+      // Get the item
+      const itemDoc = doc(db, 'items', loanData.itemId);
+      const itemSnapshot = await getDoc(itemDoc);
       
+      // If item still exists, update quantity
+      if (itemSnapshot.exists()) {
+        const itemData = itemSnapshot.data() as Item;
+        await updateDoc(itemDoc, {
+          quantity: itemData.quantity + loanData.quantity,
+          updatedAt: Timestamp.now()
+        });
+      }
+
+      // Mark loan as returned
       await updateDoc(loanDoc, {
         status: 'returned',
         returnedAt: Timestamp.now()
       });
       
-      console.log('✓ Loan returned:', loanId);
+      console.log('✓ Loan returned and inventory updated:', loanId);
     } catch (error) {
       console.error('Error returning loan:', error);
       throw error;
