@@ -9,6 +9,7 @@ import { getAuthService } from '../services/auth.service';
 
 export class DashboardComponent {
   private authService = getAuthService();
+  private allItems: Item[] = [];
   private items: Item[] = [];
   private locations: Location[] = [];
   private categories: Category[] = [];
@@ -40,7 +41,8 @@ export class DashboardComponent {
    */
   async loadItems(): Promise<void> {
     try {
-      this.items = await firestoreService.getItems();
+      this.allItems = await firestoreService.getItems();
+      this.items = [...this.allItems];
     } catch (error) {
       console.error('Error loading items:', error);
       this.showError('Failed to load items. Please try again.');
@@ -277,32 +279,20 @@ export class DashboardComponent {
    * Attach event listeners
    */
   attachEventListeners(): void {
-    // Search
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-    if (searchInput) {
-      const newSearchInput = searchInput.cloneNode(true) as HTMLInputElement;
-      searchInput.parentNode?.replaceChild(newSearchInput, searchInput);
-      newSearchInput.addEventListener('input', (e) => {
-        this.handleSearch((e.target as HTMLInputElement).value);
-      });
-    }
-
-    // Filters
     const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
     const locationFilter = document.getElementById('locationFilter') as HTMLSelectElement;
-    
-    if (statusFilter) {
-      const newStatusFilter = statusFilter.cloneNode(true) as HTMLSelectElement;
-      statusFilter.parentNode?.replaceChild(newStatusFilter, statusFilter);
-      newStatusFilter.addEventListener('change', () => this.applyFilters());
-    }
-    
-    if (locationFilter) {
-      const newLocationFilter = locationFilter.cloneNode(true) as HTMLSelectElement;
-      locationFilter.parentNode?.replaceChild(newLocationFilter, locationFilter);
-      newLocationFilter.addEventListener('change', () => this.applyFilters());
-    }
 
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.applyFiltersAndSearch());
+    }
+    if (statusFilter) {
+      statusFilter.addEventListener('change', () => this.applyFiltersAndSearch());
+    }
+    if (locationFilter) {
+      locationFilter.addEventListener('change', () => this.applyFiltersAndSearch());
+    }
+    
     // Request buttons (inline onclick is better for dynamic content)
     document.querySelectorAll('.request-btn').forEach(btn => {
       const itemId = (btn as HTMLElement).dataset.itemId;
@@ -349,33 +339,14 @@ export class DashboardComponent {
   }
 
   /**
-   * Handle search with client-side filtering
+   * Apply filters and search
    */
-  async handleSearch(term: string): Promise<void> {
-    if (term.trim().length < 2) {
-      await this.loadItems();
-    } else {
-      await this.loadItems(); // Load all items first
-      const searchTerm = term.toLowerCase().trim();
-      this.items = this.items.filter(item => 
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.description?.toLowerCase().includes(searchTerm) ||
-        item.location?.toLowerCase().includes(searchTerm) ||
-        item.category?.toLowerCase().includes(searchTerm) ||
-        item.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
-      );
-    }
-    this.updateTableBody();
-  }
-
-  /**
-   * Apply filters
-   */
-  applyFilters(): void {
+  applyFiltersAndSearch(): void {
     const statusFilter = (document.getElementById('statusFilter') as HTMLSelectElement)?.value;
     const locationFilter = (document.getElementById('locationFilter') as HTMLSelectElement)?.value;
+    const searchTerm = (document.getElementById('searchInput') as HTMLInputElement)?.value.toLowerCase().trim();
 
-    let filtered = [...this.items];
+    let filtered = [...this.allItems];
 
     if (statusFilter) {
       filtered = filtered.filter(item => item.status === statusFilter);
@@ -383,6 +354,16 @@ export class DashboardComponent {
 
     if (locationFilter) {
       filtered = filtered.filter(item => item.location === locationFilter);
+    }
+
+    if (searchTerm.length > 0) {
+      filtered = filtered.filter(item => 
+        item.name.toLowerCase().includes(searchTerm) ||
+        item.description?.toLowerCase().includes(searchTerm) ||
+        item.location?.toLowerCase().includes(searchTerm) ||
+        item.category?.toLowerCase().includes(searchTerm) ||
+        item.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+      );
     }
 
     this.items = filtered;
@@ -480,7 +461,7 @@ export class DashboardComponent {
 
       // Reload items
       await this.loadItems();
-      this.updateTableBody();
+      this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error submitting request:', error);
       this.showError('Failed to submit request. Please try again.');
@@ -596,7 +577,7 @@ export class DashboardComponent {
 
       // Reload items
       await this.loadItems();
-      this.updateTableBody();
+      this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error saving item:', error);
       this.showError('Failed to save item. Please try again.');
@@ -615,7 +596,7 @@ export class DashboardComponent {
       await firestoreService.deleteItem(itemId);
       this.showSuccess('Item deleted successfully');
       await this.loadItems();
-      this.updateTableBody();
+      this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error deleting item:', error);
       this.showError('Failed to delete item. Please try again.');
@@ -626,7 +607,7 @@ export class DashboardComponent {
    * Get unique locations from items
    */
   getUniqueLocations(): string[] {
-    return [...new Set(this.items.map(item => item.location))];
+    return [...new Set(this.allItems.map(item => item.location))];
   }
 
   /**
