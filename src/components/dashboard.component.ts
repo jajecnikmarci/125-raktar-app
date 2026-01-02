@@ -286,6 +286,30 @@ export class DashboardComponent {
   }
 
   /**
+   * Render Note Modal
+   */
+  renderNoteModal(): string {
+    return `
+      <div class="modal fade" id="dashboardNoteModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Loan Note</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p id="dashboardNoteContent" class="text-break"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Render Item Loans Modal
    */
   renderItemLoansModal(): string {
@@ -308,10 +332,11 @@ export class DashboardComponent {
                       <th>Status</th>
                       <th>Requested</th>
                       <th>Returned</th>
+                      <th>Note</th>
                     </tr>
                   </thead>
                   <tbody id="itemLoansTableBody">
-                    <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                    <tr><td colspan="6" class="text-center">Loading...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -322,6 +347,7 @@ export class DashboardComponent {
           </div>
         </div>
       </div>
+      ${this.renderNoteModal()}
     `;
   }
 
@@ -397,6 +423,20 @@ export class DashboardComponent {
   }
 
   /**
+   * Open Note Modal
+   */
+  openNoteModal(note: string): void {
+    const modalEl = document.getElementById('dashboardNoteModal');
+    const contentEl = document.getElementById('dashboardNoteContent');
+    
+    if (modalEl && contentEl) {
+      contentEl.textContent = note;
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+
+  /**
    * View loans for a specific item
    */
   async viewLoans(itemId: string): Promise<void> {
@@ -411,7 +451,7 @@ export class DashboardComponent {
     if (titleEl) titleEl.textContent = `Loans for: ${item.name}`;
 
     const tbody = document.getElementById('itemLoansTableBody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
 
     try {
       const loans = await firestoreService.getLoansByItem(itemId);
@@ -419,7 +459,7 @@ export class DashboardComponent {
       if (!tbody) return;
 
       if (loans.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No history found for this item.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No history found for this item.</td></tr>';
         return;
       }
 
@@ -437,12 +477,28 @@ export class DashboardComponent {
           </td>
           <td>${new Date(loan.requestedAt).toLocaleDateString()}</td>
           <td>${loan.returnedAt ? new Date(loan.returnedAt).toLocaleDateString() : '-'}</td>
+          <td>
+             ${loan.notes ? `
+              <button class="btn btn-sm btn-outline-info view-loan-note-btn" 
+                      data-note="${this.escapeHtml(loan.notes)}">
+                <i class="bi bi-sticky"></i> Note
+              </button>
+             ` : '<span class="text-muted">-</span>'}
+          </td>
         </tr>
       `).join('');
 
+      // Attach note button listeners
+      tbody.querySelectorAll('.view-loan-note-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const note = (e.currentTarget as HTMLElement).dataset.note;
+          if (note) this.openNoteModal(note);
+        });
+      });
+
     } catch (error) {
       console.error('Error fetching item loans:', error);
-      if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load history.</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load history.</td></tr>';
     }
   }
 
