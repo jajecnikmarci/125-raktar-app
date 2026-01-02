@@ -6,13 +6,11 @@
 import { getAuthService } from './services/auth.service';
 import { DashboardComponent } from './components/dashboard.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
-import { settingsComponent } from './components/settings.component';
-import { MyLoansComponent } from './components/my-loans.component';
 import { User } from './types/models';
 
 class App {
   private authService = getAuthService();
-  private currentView: 'dashboard' | 'admin' | 'settings' | 'myloans' = 'dashboard';
+  private currentView: 'dashboard' | 'admin' = 'dashboard';
 
   constructor() {
     this.init();
@@ -58,12 +56,6 @@ class App {
         const view = (e.currentTarget as HTMLElement).dataset.view as 'dashboard' | 'admin';
         this.navigate(view);
       });
-    });
-
-    // My Loans link
-    document.getElementById('myLoansLink')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.showMyLoans();
     });
   }
 
@@ -160,7 +152,6 @@ class App {
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
     const adminLink = document.getElementById('adminLink');
-    const settingsLink = document.getElementById('settingsLink');
 
     if (userName) userName.textContent = user.displayName;
     if (userAvatar) {
@@ -173,15 +164,12 @@ class App {
     if (adminLink) {
       adminLink.style.display = isAdmin ? 'block' : 'none';
     }
-    if (settingsLink) {
-      settingsLink.style.display = isAdmin ? 'block' : 'none';
-    }
   }
 
   /**
    * Navigate to view
    */
-  public navigate(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): void {
+  public navigate(view: 'dashboard' | 'admin'): void {
     // Update active nav link
     document.querySelectorAll('[data-view]').forEach(link => {
       link.classList.remove('active');
@@ -197,7 +185,7 @@ class App {
   /**
    * Load view
    */
-  private async loadView(view: 'dashboard' | 'admin' | 'settings' | 'myloans'): Promise<void> {
+  private async loadView(view: 'dashboard' | 'admin'): Promise<void> {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
@@ -229,34 +217,6 @@ class App {
         mainContent.innerHTML = '<div id="adminContainer"></div>';
         const adminPanel = new AdminPanelComponent('adminContainer');
         await adminPanel.init();
-      } else if (view === 'settings') {
-        if (!this.authService.isAdmin()) {
-          mainContent.innerHTML = `
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle"></i>
-              Access Denied: Admin privileges required.
-            </div>
-          `;
-          return;
-        }
-        
-        const html = await settingsComponent.init();
-        mainContent.innerHTML = html;
-        settingsComponent.setupEventListeners();
-      } else if (view === 'myloans') {
-        if (!this.authService.isAuthenticated()) {
-          mainContent.innerHTML = `
-            <div class="alert alert-warning">
-              <i class="bi bi-exclamation-triangle"></i>
-              Please sign in to view your loans.
-            </div>
-          `;
-          return;
-        }
-        
-        mainContent.innerHTML = '<div id="myLoansContainer"></div>';
-        const myLoans = new MyLoansComponent('myLoansContainer');
-        await myLoans.init();
       }
     } catch (error) {
       console.error('Error loading view:', error);
@@ -267,13 +227,6 @@ class App {
         </div>
       `;
     }
-  }
-
-  /**
-   * Show user's loans
-   */
-  private showMyLoans(): void {
-    this.navigate('myloans');
   }
 }
 

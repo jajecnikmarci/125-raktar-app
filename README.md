@@ -1,6 +1,6 @@
 # 📦 Inventory & Lending Management System
 
-A modern, full-stack inventory and lending management system built with TypeScript, Vite, Bootstrap 5, Firebase Authentication, and MongoDB Atlas. Designed to be deployed as a static site on GitHub Pages.
+A modern, full-stack inventory and lending management system built with TypeScript, Vite, Bootstrap 5, and Firebase. This project is configured for easy deployment to either Firebase Hosting or GitHub Pages.
 
 ## 🌟 Features
 
@@ -18,7 +18,7 @@ A modern, full-stack inventory and lending management system built with TypeScri
 - **Frontend**: TypeScript, Vite, Bootstrap 5
 - **Authentication**: Firebase Auth (Google Sign-In)
 - **Database**: Firebase Firestore (Real-time NoSQL)
-- **Hosting**: GitHub Pages (Static Site)
+- **Hosting**: Firebase Hosting / GitHub Pages
 - **Icons**: Bootstrap Icons
 
 ## 📋 Prerequisites
@@ -97,18 +97,7 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 **Note**: Firestore uses the same Firebase project configuration. No additional database credentials needed!
 
-### 6. Update Vite Configuration
-
-Edit `vite.config.ts` and change the `base` path to match your GitHub repository name:
-
-```typescript
-export default defineConfig({
-  base: '/your-repo-name/', // e.g., '/125-raktar-app/'
-  // ...
-});
-```
-
-### 7. Run Development Server
+### 6. Run Development Server
 
 ```bash
 npm run dev
@@ -142,121 +131,69 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │   ├── types/
 │   │   └── models.ts                   # TypeScript interfaces
 │   └── main.ts                         # Application entry point
-├── index.html                          # Main HTML file
-├── package.json                        # Dependencies
-├── tsconfig.json                       # TypeScript configuration
-├── vite.config.ts                      # Vite configuration
-├── .env.example                        # Environment variables template
-└── README.md                           # This file
+├── dist/                             # Build output directory
+├── .gitignore                        # Files to ignore in git
+├── index.html                        # Main HTML file
+├── package.json                      # Dependencies
+├── tsconfig.json                     # TypeScript configuration
+├── vite.config.ts                    # Vite configuration
+├── .env.example                      # Environment variables template
+└── README.md                         # This file
 ```
 
-## 🚢 Deploying to GitHub Pages
+## 🚢 Deployment
 
-### 1. Build the Project
+This project supports two deployment targets: Firebase Hosting (recommended) and GitHub Pages.
 
-```bash
-npm run build
+### Option 1: Deploying to Firebase Hosting (Recommended)
+
+Firebase Hosting provides a fast, secure, and reliable way to host your web app.
+
+**To deploy, simply run the `npm run build` command, and then use the IDE's Firebase deployment feature.**
+
+### Option 2: Deploying to GitHub Pages
+
+This method is suitable for simple static site hosting.
+
+#### 1. Configure Vite for GitHub Pages
+
+Edit `vite.config.ts` and set the `base` path to match your GitHub repository name:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  base: '/your-repo-name/', // e.g., '/125-raktar-app/'
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+  server: {
+    port: 3000,
+  },
+});
 ```
 
-### 2. Deploy
+#### 2. Deploy
 
 ```bash
 npm run deploy
 ```
 
-This will:
-- Build the production bundle
-- Push the `dist` folder to the `gh-pages` branch
-- Deploy to GitHub Pages
+This script will:
+- Build the production bundle into the `dist` folder.
+- Push the `dist` folder to the `gh-pages` branch on GitHub.
 
-### 3. Configure GitHub Pages
+#### 3. Configure GitHub Pages
 
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Pages**
-3. Set source to `gh-pages` branch
-4. Save and wait for deployment
+1. Go to your repository on GitHub.
+2. Navigate to **Settings** → **Pages**.
+3. Under **Build and deployment**, set the **Source** to **Deploy from a branch**.
+4. Set the **Branch** to `gh-pages` with the `/ (root)` folder.
+5. Save and wait for deployment.
 
-Your app will be available at: `https://yourusername.github.io/125-raktar-app/`
-
-## 📊 Database Schema
-
-### Items Collection
-
-```typescript
-{
-  _id: ObjectId,
-  name: string,
-  location: string,
-  quantity: number,
-  tags: string[],
-  description: string,
-  status: 'available' | 'on_loan' | 'maintenance' | 'retired',
-  createdAt: Date,
-  updatedAt: Date,
-  createdBy: string,
-  imageUrl?: string
-}
-```
-
-### Loans Collection
-
-```typescript
-{
-  _id: ObjectId,
-  itemId: string,
-  itemName: string,
-  userId: string,
-  userEmail: string,
-  userName: string,
-  quantity: number,
-  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'overdue',
-  requestedAt: Date,
-  approvedAt?: Date,
-  approvedBy?: string,
-  returnedAt?: Date,
-  expectedReturnDate?: Date,
-  notes?: string,
-  adminNotes?: string
-}
-```
-
-### Users Collection
-
-```typescript
-{
-  _id: ObjectId,
-  uid: string,              // Firebase UID (unique)
-  email: string,            // (unique)
-  displayName: string,
-  photoURL?: string,
-  role: 'admin' | 'user',
-  createdAt: Date,
-  lastLogin?: Date,
-  isActive: boolean
-}
-```
-
-## 🔒 Security Considerations
-
-### ⚠️ Important: API Key Security
-
-This application exposes MongoDB API keys client-side. To mitigate risks:
-
-1. **Use MongoDB App Services Rules**: Set up server-side validation rules
-2. **Restrict API Key Permissions**: Create a dedicated API key with minimal permissions
-3. **Enable IP Whitelisting**: Restrict access to known IPs (if possible)
-4. **Use MongoDB Realm Functions**: For sensitive operations, use serverless functions
-5. **Rate Limiting**: Enable rate limiting in MongoDB Atlas
-
-### Production Recommendations
-
-For production environments, consider:
-
-- Using MongoDB App Services with server-side functions
-- Implementing Firebase Security Rules
-- Adding request signing/HMAC validation
-- Using environment-specific API keys
-- Implementing audit logging
+Your app will be available at: `https://yourusername.github.io/your-repo-name/`
 
 ## 🛠️ Development
 
@@ -265,8 +202,8 @@ For production environments, consider:
 ```bash
 npm run dev       # Start development server
 npm run build     # Build for production
-npm run preview   # Preview production build
-npm run deploy    # Deploy to GitHub Pages
+npm run preview   # Preview production build locally
+npm run deploy    # Build and deploy to GitHub Pages
 ```
 
 ### Adding New Features
@@ -280,21 +217,14 @@ npm run deploy    # Deploy to GitHub Pages
 
 ### Authentication Issues
 
-- Verify Firebase configuration in `.env`
-- Check that Google Sign-In is enabled in Firebase Console
-- Ensure your domain is authorized in Firebase (including localhost)
-
-### Database Connection Issues
-
-- Verify MongoDB Data API URL and API key
-- Check network access settings in MongoDB Atlas
-- Ensure collections exist with correct names
+- Verify Firebase configuration in `.env`.
+- Check that Google Sign-In is enabled in the Firebase Console.
+- Ensure your domain is authorized in Firebase (including localhost for development).
 
 ### Build Issues
 
 - Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
-- Clear Vite cache: `rm -rf .vite`
-- Check Node.js version: `node --version` (should be v18+)
+- Check your Node.js version: `node --version` (should be v18+).
 
 ## 📝 License
 
@@ -310,5 +240,4 @@ For issues or questions, please open an issue on GitHub.
 
 ---
 
-Built with ❤️ using TypeScript, Vite, Bootstrap, Firebase, and MongoDB
-
+Built with ❤️ using TypeScript, Vite, Bootstrap, and Firebase.

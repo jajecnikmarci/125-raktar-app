@@ -1,56 +1,3 @@
-# 🚨 Firestore Security Rules Frissítés Szükséges
-
-## Probléma
-
-A következő hibákat látod a konzolban:
-
-```
-Error fetching locations: FirebaseError: Missing or insufficient permissions.
-Error fetching categories: FirebaseError: Missing or insufficient permissions.
-```
-
-## Megoldás - 5 perc
-
-### 1. Lépés: Nyisd meg a Firebase Console-t
-
-🔗 [Firebase Console - Firestore Rules](https://console.firebase.google.com/project/raktar-app-b8086/firestore/rules)
-
-### 2. Lépés: Frissítsd a Security Rules-t
-
-A **Rules** fülön add hozzá ezt a két új collection-t a meglévő szabályokhoz (a `}` előtt, a `loans` szabályok után):
-
-```javascript
-    // Locations collection (for dynamic location management)
-    match /locations/{locationId} {
-      // Everyone authenticated can read locations
-      allow read: if isSignedIn();
-      
-      // Only admins can create, update, or delete locations
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // Categories collection (for dynamic category management)
-    match /categories/{categoryId} {
-      // Everyone authenticated can read categories
-      allow read: if isSignedIn();
-      
-      // Only admins can create, update, or delete categories
-      allow create, update, delete: if isAdmin();
-    }
-```
-
-### 3. Lépés: Publikáld a változtatásokat
-
-1. Kattints a **Publish** gombra
-2. Várj 5-10 másodpercet
-3. Frissítsd az alkalmazást (F5)
-
-## Teljes Security Rules (ha biztos akarsz lenni)
-
-<details>
-<summary>Kattints ide a teljes rules kódért</summary>
-
-```javascript
 rules_version = '2';
 
 service cloud.firestore {
@@ -115,18 +62,3 @@ service cloud.firestore {
     }
   }
 }
-```
-
-</details>
-
-## Ellenőrzés
-
-A sikeres frissítés után:
-
-1. ✅ A dashboard betöltődik hibák nélkül
-2. ✅ A Settings oldal megjeleníti a locations/categories táblázatokat
-3. ✅ Az item form location/category dropdown-ok megjelennek
-
-## További segítség
-
-Ha még mindig hibákat látsz, nézd meg a [FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md) teljes útmutatóját.
