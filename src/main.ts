@@ -153,8 +153,11 @@ class App {
   private updateUserDisplay(user: User): void {
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
+    
     const adminLink = document.getElementById('adminLink');
     const mobileAdminLink = document.getElementById('mobileAdminLink');
+    const settingsLink = document.getElementById('settingsLink');
+    const mobileSettingsLink = document.getElementById('mobileSettingsLink');
 
     if (userName) userName.textContent = user.displayName;
     if (userAvatar) {
@@ -162,14 +165,13 @@ class App {
       userAvatar.alt = user.displayName;
     }
 
-    // Show admin links if user is admin
+    // Show admin and settings links if user is admin
     const isAdmin = this.authService.isAdmin();
-    if (adminLink) {
-      adminLink.style.display = isAdmin ? 'block' : 'none';
-    }
-    if (mobileAdminLink) {
-      mobileAdminLink.style.display = isAdmin ? 'block' : 'none';
-    }
+    
+    if (adminLink) adminLink.style.display = isAdmin ? 'block' : 'none';
+    if (mobileAdminLink) mobileAdminLink.style.display = isAdmin ? 'block' : 'none';
+    if (settingsLink) settingsLink.style.display = isAdmin ? 'block' : 'none';
+    if (mobileSettingsLink) mobileSettingsLink.style.display = isAdmin ? 'block' : 'none';
   }
 
   /**

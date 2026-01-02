@@ -207,12 +207,14 @@ export class DashboardComponent {
     const isAdmin = this.authService.isAdmin();
     const buttons: string[] = [];
 
-    // View Loans button (visible to everyone)
-    buttons.push(`
-      <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
-        <i class="bi bi-eye"></i>
-      </button>
-    `);
+    // View Loans button (visible to admins only)
+    if (isAdmin) {
+      buttons.push(`
+        <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
+          <i class="bi bi-eye"></i>
+        </button>
+      `);
+    }
 
     // Request button for users if item is available
     if (item.status === ItemStatus.AVAILABLE && item.quantity > 0) {
@@ -585,6 +587,25 @@ export class DashboardComponent {
 
      // Fetch and Render Loans
      const loansList = document.getElementById('productLoansList');
+     
+     if (!this.authService.isAdmin()) {
+        if (loansList) {
+            const card = loansList.closest('.card');
+            if (card && card.parentElement) {
+                (card.parentElement as HTMLElement).style.display = 'none';
+            }
+        }
+        const inventoryList = document.getElementById('productInventoryList');
+        if (inventoryList) {
+            const card = inventoryList.closest('.card');
+            if (card && card.parentElement) {
+                card.parentElement.classList.remove('col-md-6');
+                card.parentElement.classList.add('col-md-12');
+            }
+        }
+        return;
+     }
+
      if (loansList) loansList.innerHTML = '<li class="list-group-item">Loading loans...</li>';
 
      try {
