@@ -24,7 +24,31 @@ export enum LoanStatus {
 
 export enum UserRole {
   ADMIN = 'admin',
+  KEEPER = 'keeper',
   USER = 'user'
+}
+
+export enum RoleRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+/**
+ * Role Request Interface
+ * Represents a user's request for a specific role
+ */
+export interface RoleRequest {
+  _id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  requestedRole: UserRole;
+  status: RoleRequestStatus;
+  requestedAt: Date;
+  processedAt?: Date;
+  processedBy?: string; // Admin ID
+  reason?: string; // Why the user wants the role
 }
 
 /**

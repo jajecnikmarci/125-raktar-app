@@ -10,6 +10,8 @@ import { MyLoansComponent } from './components/my-loans.component';
 import { SettingsComponent } from './components/settings.component';
 import { User } from './types/models';
 
+import { firestoreService } from './services/firestore.service';
+
 class App {
   private authService = getAuthService();
   private currentView: 'dashboard' | 'admin' | 'my-loans' | 'settings' = 'dashboard';
@@ -29,6 +31,7 @@ class App {
 
     // Set up UI event listeners
     this.setupUIListeners();
+    this.setupProfileListeners();
 
     // Check initial auth state
     if (this.authService.isAuthenticated()) {
@@ -36,6 +39,129 @@ class App {
       this.loadView(this.currentView);
     } else {
       this.showLogin();
+    }
+  }
+
+  /**
+   * Set up Profile UI listeners
+   */
+  private setupProfileListeners(): void {
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+      profileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.openProfileModal();
+      });
+    }
+
+    const roleRequestForm = document.getElementById('roleRequestForm');
+    if (roleRequestForm) {
+      roleRequestForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await this.handleRoleRequest();
+      });
+    }
+  }
+
+  /**
+   * Open profile modal
+   */
+  private async openProfileModal(): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    // Populate user data
+    const avatar = document.getElementById('profileAvatar') as HTMLImageElement;
+    const name = document.getElementById('profileName');
+    const email = document.getElementById('profileEmail');
+    const role = document.getElementById('profileRole');
+    
+    if (avatar) avatar.src = user.photoURL || 'https://via.placeholder.com/100';
+    if (name) name.textContent = user.displayName;
+    if (email) email.textContent = user.email;
+    if (role) {
+      role.textContent = user.role.toUpperCase();
+      role.className = `badge ${user.role === 'admin' || user.role === 'keeper' ? 'bg-danger' : 'bg-primary'}`;
+    }
+
+    // Load role request history
+    const historySection = document.getElementById('roleRequestHistory');
+    const historyBody = document.getElementById('roleRequestTableBody');
+    
+    if (historySection && historyBody) {
+      historyBody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+      historySection.style.display = 'block';
+      
+      try {
+        const requests = await firestoreService.getUserRoleRequests(user._id!);
+        
+        if (requests.length === 0) {
+          historySection.style.display = 'none';
+        } else {
+          historyBody.innerHTML = requests.map(req => `
+            <tr>
+              <td>${req.requestedRole}</td>
+              <td>
+                <span class="badge bg-${req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'danger' : 'warning'}">
+                  ${req.status}
+                </span>
+              </td>
+              <td>${new Date(req.requestedAt).toLocaleDateString()}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error loading role requests:', error);
+        historyBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load history</td></tr>';
+      }
+    }
+
+    // Show modal
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('profileModal'));
+    modal.show();
+  }
+
+  /**
+   * Handle role request submission
+   */
+  private async handleRoleRequest(): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    const roleSelect = document.getElementById('requestedRole') as HTMLSelectElement;
+    const reasonInput = document.getElementById('requestReason') as HTMLTextAreaElement;
+    const submitBtn = document.querySelector('#roleRequestForm button[type="submit"]') as HTMLButtonElement;
+
+    if (!roleSelect.value) {
+      alert('Please select a role');
+      return;
+    }
+
+    try {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      await firestoreService.createRoleRequest({
+        userId: user._id!,
+        userName: user.displayName,
+        userEmail: user.email,
+        requestedRole: roleSelect.value as any,
+        reason: reasonInput.value
+      });
+
+      alert('Role request submitted successfully! An admin will review your request.');
+      
+      const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('profileModal'));
+      modal?.hide();
+      
+      roleSelect.value = '';
+      reasonInput.value = '';
+    } catch (error) {
+      console.error('Error submitting role request:', error);
+      alert('Failed to submit request. Please try again.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Request';
     }
   }
 

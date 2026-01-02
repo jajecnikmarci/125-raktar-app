@@ -8,10 +8,10 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to check if user is admin
+    // Helper function to check if user is admin OR keeper
     function isAdmin() {
-      return isSignedIn() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isSignedIn() && (userRole == 'admin' || userRole == 'keeper');
     }
     
     // Helper function to check if user owns the document
@@ -21,14 +21,15 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allow users to update their own profile EXCEPT role
+      // Allow admins to update anything including role
       allow update: if isSignedIn() && (
         (request.auth.uid == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
         || isAdmin()
       );
       allow delete: if isAdmin();
-      allow read: if isAdmin();
     }
     
     // Items collection
@@ -59,6 +60,20 @@ service cloud.firestore {
     match /categories/{categoryId} {
       allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
+    }
+
+    // Role Requests collection
+    match /role_requests/{requestId} {
+      // Admins/Keepers can read all, Users can read their own
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      // Users can create requests for themselves
+      allow create: if isSignedIn() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.status == 'pending';
+      // Only admins/keepers can update (approve/reject)
+      allow update: if isAdmin();
     }
   }
 }
