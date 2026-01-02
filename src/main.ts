@@ -6,11 +6,13 @@
 import { getAuthService } from './services/auth.service';
 import { DashboardComponent } from './components/dashboard.component';
 import { AdminPanelComponent } from './components/admin-panel.component';
+import { MyLoansComponent } from './components/my-loans.component';
+import { SettingsComponent } from './components/settings.component';
 import { User } from './types/models';
 
 class App {
   private authService = getAuthService();
-  private currentView: 'dashboard' | 'admin' = 'dashboard';
+  private currentView: 'dashboard' | 'admin' | 'my-loans' | 'settings' = 'dashboard';
 
   constructor() {
     this.init();
@@ -53,7 +55,7 @@ class App {
     document.querySelectorAll('[data-view]').forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        const view = (e.currentTarget as HTMLElement).dataset.view as 'dashboard' | 'admin';
+        const view = (e.currentTarget as HTMLElement).dataset.view as 'dashboard' | 'admin' | 'my-loans' | 'settings';
         this.navigate(view);
       });
     });
@@ -169,7 +171,7 @@ class App {
   /**
    * Navigate to view
    */
-  public navigate(view: 'dashboard' | 'admin'): void {
+  public navigate(view: 'dashboard' | 'admin' | 'my-loans' | 'settings'): void {
     // Update active nav link
     document.querySelectorAll('[data-view]').forEach(link => {
       link.classList.remove('active');
@@ -185,7 +187,7 @@ class App {
   /**
    * Load view
    */
-  private async loadView(view: 'dashboard' | 'admin'): Promise<void> {
+  private async loadView(view: 'dashboard' | 'admin' | 'my-loans' | 'settings'): Promise<void> {
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
@@ -217,6 +219,14 @@ class App {
         mainContent.innerHTML = '<div id="adminContainer"></div>';
         const adminPanel = new AdminPanelComponent('adminContainer');
         await adminPanel.init();
+      } else if (view === 'my-loans') {
+        mainContent.innerHTML = '<div id="myLoansContainer"></div>';
+        const myLoans = new MyLoansComponent('myLoansContainer');
+        await myLoans.init();
+      } else if (view === 'settings') {
+        mainContent.innerHTML = '<div id="settingsContainer"></div>';
+        const settings = new SettingsComponent('settingsContainer');
+        await settings.init();
       }
     } catch (error) {
       console.error('Error loading view:', error);
