@@ -155,7 +155,46 @@ export class MyLoansComponent {
           </div>
         </div>
       </div>
+      ${this.renderNoteModal()}
     `;
+  }
+
+  /**
+   * Render Note Modal
+   */
+  renderNoteModal(): string {
+    return `
+      <div class="modal fade" id="myLoansNoteModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Loan Note</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p id="myLoansNoteContent" class="text-break"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Open Note Modal
+   */
+  openNoteModal(note: string): void {
+    const modalEl = document.getElementById('myLoansNoteModal');
+    const contentEl = document.getElementById('myLoansNoteContent');
+    
+    if (modalEl && contentEl) {
+      contentEl.textContent = note;
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
+    }
   }
 
   /**
@@ -208,7 +247,13 @@ export class MyLoansComponent {
       <tr ${isOverdue ? 'class="table-warning"' : ''}>
         <td>
           <strong>${this.escapeHtml(loan.itemName)}</strong>
-          ${loan.notes ? `<br><small class="text-muted">${this.escapeHtml(loan.notes)}</small>` : ''}
+          ${loan.notes ? `
+            <br>
+            <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> View Note
+            </button>
+          ` : ''}
         </td>
         <td><span class="badge bg-secondary">${loan.quantity}</span></td>
         <td>${this.formatDate(loan.approvedAt || loan.requestedAt)}</td>
@@ -266,7 +311,13 @@ export class MyLoansComponent {
       <tr>
         <td>
           <strong>${this.escapeHtml(loan.itemName)}</strong>
-          ${loan.notes ? `<br><small class="text-muted">${this.escapeHtml(loan.notes)}</small>` : ''}
+          ${loan.notes ? `
+            <br>
+            <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> View Note
+            </button>
+          ` : ''}
         </td>
         <td><span class="badge bg-secondary">${loan.quantity}</span></td>
         <td>${this.formatDate(loan.requestedAt)}</td>
@@ -334,6 +385,13 @@ export class MyLoansComponent {
         <td>
           <strong>${this.escapeHtml(loan.itemName)}</strong>
           ${loan.adminNotes ? `<br><small class="text-muted"><i class="bi bi-info-circle"></i> ${this.escapeHtml(loan.adminNotes)}</small>` : ''}
+          ${loan.notes ? `
+            <br>
+            <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> View Note
+            </button>
+          ` : ''}
         </td>
         <td><span class="badge bg-secondary">${loan.quantity}</span></td>
         <td><small>${this.formatDate(loan.requestedAt)}</small></td>
@@ -350,7 +408,12 @@ export class MyLoansComponent {
    * Attach event listeners
    */
   attachEventListeners(): void {
-    // No dynamic actions needed for now
+    document.querySelectorAll('.view-note-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const note = (e.currentTarget as HTMLElement).dataset.note;
+        if (note) this.openNoteModal(note);
+      });
+    });
   }
 
   /**

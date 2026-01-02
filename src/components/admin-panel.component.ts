@@ -143,7 +143,48 @@ export class AdminPanelComponent {
 
       <!-- Rejection Modal -->
       ${this.renderRejectionModal()}
+
+      <!-- Note Modal -->
+      ${this.renderNoteModal()}
     `;
+  }
+
+  /**
+   * Render Note Modal
+   */
+  renderNoteModal(): string {
+    return `
+      <div class="modal fade" id="adminNoteModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Loan Note</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p id="adminNoteContent" class="text-break"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Open Note Modal
+   */
+  openNoteModal(note: string): void {
+    const modalEl = document.getElementById('adminNoteModal');
+    const contentEl = document.getElementById('adminNoteContent');
+    
+    if (modalEl && contentEl) {
+      contentEl.textContent = note;
+      const modal = new (window as any).bootstrap.Modal(modalEl);
+      modal.show();
+    }
   }
 
   /**
@@ -170,7 +211,7 @@ export class AdminPanelComponent {
                   <th>Quantity</th>
                   <th>Requested Date</th>
                   <th>Expected Return</th>
-                  <th>Notes</th>
+                  <th>Note</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -202,12 +243,11 @@ export class AdminPanelComponent {
         <td>${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}</td>
         <td>
           ${loan.notes ? `
-            <button class="btn btn-sm btn-outline-secondary" 
-                    data-bs-toggle="tooltip" 
-                    title="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-file-text"></i> View
+            <button class="btn btn-sm btn-outline-info view-note-btn" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> Note
             </button>
-          ` : '<span class="text-muted">None</span>'}
+          ` : '<span class="text-muted">-</span>'}
         </td>
         <td>
           <div class="btn-group" role="group">
@@ -252,6 +292,7 @@ export class AdminPanelComponent {
                   <th>Approved Date</th>
                   <th>Expected Return</th>
                   <th>Days Out</th>
+                  <th>Note</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -290,6 +331,14 @@ export class AdminPanelComponent {
         </td>
         <td><span class="badge bg-info">${daysOut} days</span></td>
         <td>
+          ${loan.notes ? `
+            <button class="btn btn-sm btn-outline-info view-note-btn" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> Note
+            </button>
+          ` : '<span class="text-muted">-</span>'}
+        </td>
+        <td>
           <button class="btn btn-sm btn-primary return-btn" 
                   data-loan-id="${loan._id}" 
                   title="Mark as Returned">
@@ -326,6 +375,7 @@ export class AdminPanelComponent {
                   <th>Approved</th>
                   <th>Returned</th>
                   <th>Duration</th>
+                  <th>Note</th>
                 </tr>
               </thead>
               <tbody>
@@ -363,6 +413,14 @@ export class AdminPanelComponent {
           ${wasOverdue ? '<span class="badge bg-warning ms-2">Was Overdue</span>' : ''}
         </td>
         <td><span class="badge bg-success">${duration}</span></td>
+        <td>
+          ${loan.notes ? `
+            <button class="btn btn-sm btn-outline-info view-note-btn" 
+                    data-note="${this.escapeHtml(loan.notes)}">
+              <i class="bi bi-sticky"></i> Note
+            </button>
+          ` : '<span class="text-muted">-</span>'}
+        </td>
       </tr>
     `;
   }
@@ -442,6 +500,14 @@ export class AdminPanelComponent {
         this.handleReject();
       });
     }
+
+    // View note buttons
+    document.querySelectorAll('.view-note-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const note = (e.currentTarget as HTMLElement).dataset.note;
+        if (note) this.openNoteModal(note);
+      });
+    });
   }
 
   /**
