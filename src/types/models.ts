@@ -70,6 +70,7 @@ export interface Item {
   updatedAt?: Date;
   createdBy?: string; // User ID
   imageUrl?: string;
+  groupId?: string; // Identifier to group same items across locations
 }
 
 /**

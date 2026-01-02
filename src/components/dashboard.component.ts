@@ -14,6 +14,7 @@ export class DashboardComponent {
   private locations: Location[] = [];
   private categories: Category[] = [];
   private container: HTMLElement;
+  private isGrouped: boolean = false;
 
   constructor(containerId: string) {
     const element = document.getElementById(containerId);
@@ -95,14 +96,14 @@ export class DashboardComponent {
 
         <!-- Search and Filters -->
         <div class="row mb-3">
-          <div class="col-md-6">
+          <div class="col-md-5">
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" class="form-control" id="searchInput" 
                      placeholder="Search items by name, description, or tags...">
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <select class="form-select" id="statusFilter">
               <option value="">All Status</option>
               <option value="${ItemStatus.AVAILABLE}">Available</option>
@@ -116,6 +117,12 @@ export class DashboardComponent {
               <option value="">All Locations</option>
               ${this.getUniqueLocations().map(loc => `<option value="${loc}">${loc}</option>`).join('')}
             </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-center">
+             <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="groupByProductToggle" ${this.isGrouped ? 'checked' : ''}>
+                <label class="form-check-label" for="groupByProductToggle">Group Products</label>
+             </div>
           </div>
         </div>
 
@@ -135,7 +142,7 @@ export class DashboardComponent {
                   </tr>
                 </thead>
                 <tbody id="itemsTableBody">
-                  ${this.renderItemsRows()}
+                  ${this.isGrouped ? this.renderGroupedItemsRows() : this.renderItemsRows()}
                 </tbody>
               </table>
             </div>
@@ -148,6 +155,9 @@ export class DashboardComponent {
       
       <!-- Item Loans Modal -->
       ${this.renderItemLoansModal()}
+      
+      <!-- Product Details Modal -->
+      ${this.renderProductDetailsModal()}
     `;
   }
 
@@ -352,12 +362,204 @@ export class DashboardComponent {
   }
 
   /**
+   * Render Product Details Modal
+   */
+  renderProductDetailsModal(): string {
+    return `
+      <div class="modal fade" id="productDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Product Details</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <h6 id="productDetailsTitle" class="mb-3 text-primary"></h6>
+              
+              <div class="row mb-4">
+                 <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-light">Inventory Breakdown</div>
+                        <ul class="list-group list-group-flush" id="productInventoryList">
+                            <li class="list-group-item">Loading...</li>
+                        </ul>
+                    </div>
+                 </div>
+                 <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-light">Active Loans Summary</div>
+                        <ul class="list-group list-group-flush" id="productLoansList">
+                            <li class="list-group-item">Loading...</li>
+                        </ul>
+                    </div>
+                 </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render grouped table rows
+   */
+  renderGroupedItemsRows(): string {
+    const groups: { [key: string]: Item[] } = {};
+    const singles: Item[] = [];
+
+    this.items.forEach(item => {
+      if (item.groupId) {
+        if (!groups[item.groupId]) groups[item.groupId] = [];
+        groups[item.groupId].push(item);
+      } else {
+        singles.push(item);
+      }
+    });
+
+    let html = '';
+    
+    // Render Groups
+    Object.keys(groups).forEach(groupId => {
+        const groupItems = groups[groupId];
+        const representative = groupItems[0];
+        const totalQty = groupItems.reduce((sum, i) => sum + i.quantity, 0);
+        const locations = [...new Set(groupItems.map(i => i.location))].join(', ');
+        
+        html += `
+          <tr class="table-info">
+            <td>
+                <strong>${this.escapeHtml(representative.name)}</strong>
+                <br><small class="text-muted">Group ID: ${this.escapeHtml(groupId)}</small>
+            </td>
+            <td>${this.escapeHtml(locations)}</td>
+            <td><span class="badge bg-primary">${totalQty} Total</span></td>
+             <td>
+              ${(representative.tags || []).map(tag => 
+                `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
+              ).join('')}
+            </td>
+            <td><span class="badge bg-info">Grouped</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary view-group-details-btn" data-group-id="${groupId}">
+                    <i class="bi bi-eye"></i> View Details
+                </button>
+            </td>
+          </tr>
+        `;
+    });
+
+    // Render Singles
+     if (singles.length > 0) {
+        html += singles.map(item => `
+          <tr data-item-id="${item._id}">
+            <td>
+              <strong>${this.escapeHtml(item.name)}</strong>
+              <br>
+              <small class="text-muted">${this.escapeHtml(item.description || '')}</small>
+            </td>
+            <td><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location || '')}</td>
+            <td>
+              <span class="badge bg-secondary">${item.quantity || 0}</span>
+            </td>
+            <td>
+              ${(item.tags || []).map(tag => 
+                `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
+              ).join('')}
+            </td>
+            <td>${this.getStatusBadge(item.status)}</td>
+            <td>
+              ${this.renderActionButtons(item)}
+            </td>
+          </tr>
+        `).join('');
+     }
+     
+     if (html === '') {
+        return `<tr><td colspan="6" class="text-center py-4">No items found</td></tr>`;
+     }
+
+     return html;
+  }
+
+  /**
+   * Open Product Details Modal (Grouped View)
+   */
+  async openProductDetails(groupId: string): Promise<void> {
+     // Find all items in this group from ALL items (not just filtered ones)
+     const groupItems = this.allItems.filter(i => i.groupId === groupId);
+     if (groupItems.length === 0) return;
+
+     const representative = groupItems[0];
+     
+     // Show modal
+     const modal = new (window as any).bootstrap.Modal(document.getElementById('productDetailsModal'));
+     modal.show();
+     
+     const titleEl = document.getElementById('productDetailsTitle');
+     if (titleEl) titleEl.textContent = `${representative.name} (Group: ${groupId})`;
+     
+     // Render Inventory Breakdown
+     const inventoryList = document.getElementById('productInventoryList');
+     if (inventoryList) {
+        inventoryList.innerHTML = groupItems.map(item => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location)}</span>
+                <span class="badge bg-secondary rounded-pill">${item.quantity}</span>
+            </li>
+        `).join('');
+     }
+
+     // Fetch and Render Loans
+     const loansList = document.getElementById('productLoansList');
+     if (loansList) loansList.innerHTML = '<li class="list-group-item">Loading loans...</li>';
+
+     try {
+        // We need to fetch loans for EACH item ID in the group
+        const loanPromises = groupItems.map(item => firestoreService.getLoansByItem(item._id!));
+        const loansArrays = await Promise.all(loanPromises);
+        const allLoans = loansArrays.flat();
+        
+        // Filter only active/approved loans
+        const activeLoans = allLoans.filter(l => l.status === 'approved');
+        
+        if (loansList) {
+            if (activeLoans.length === 0) {
+                loansList.innerHTML = '<li class="list-group-item text-muted">No active loans.</li>';
+            } else {
+                // Group by user for cleaner display
+                const loansByUser: {[key: string]: number} = {};
+                activeLoans.forEach(loan => {
+                    if (!loansByUser[loan.userName]) loansByUser[loan.userName] = 0;
+                    loansByUser[loan.userName] += loan.quantity;
+                });
+
+                loansList.innerHTML = Object.keys(loansByUser).map(userName => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-person"></i> ${this.escapeHtml(userName)}</span>
+                        <span class="badge bg-warning text-dark rounded-pill">${loansByUser[userName]} on loan</span>
+                    </li>
+                `).join('');
+            }
+        }
+
+     } catch (error) {
+        console.error('Error fetching group loans:', error);
+        if (loansList) loansList.innerHTML = '<li class="list-group-item text-danger">Failed to load loans.</li>';
+     }
+  }
+
+  /**
    * Attach event listeners
    */
   attachEventListeners(): void {
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
     const locationFilter = document.getElementById('locationFilter') as HTMLSelectElement;
+    const groupByToggle = document.getElementById('groupByProductToggle') as HTMLInputElement;
 
     if (searchInput) {
       searchInput.addEventListener('input', () => this.applyFiltersAndSearch());
@@ -368,12 +570,27 @@ export class DashboardComponent {
     if (locationFilter) {
       locationFilter.addEventListener('change', () => this.applyFiltersAndSearch());
     }
+    if (groupByToggle) {
+        groupByToggle.addEventListener('change', (e) => {
+            this.isGrouped = (e.target as HTMLInputElement).checked;
+            this.render(); // Re-render the whole view to update table structure
+            this.attachEventListeners(); // Re-attach listeners
+        });
+    }
     
     // View Loans buttons
     document.querySelectorAll('.view-loans-btn').forEach(btn => {
       const itemId = (btn as HTMLElement).dataset.itemId;
       (btn as HTMLElement).onclick = () => {
         if (itemId) this.viewLoans(itemId);
+      };
+    });
+
+    // View Group Details buttons
+    document.querySelectorAll('.view-group-details-btn').forEach(btn => {
+      const groupId = (btn as HTMLElement).dataset.groupId;
+      (btn as HTMLElement).onclick = () => {
+        if (groupId) this.openProductDetails(groupId);
       };
     });
 
@@ -553,7 +770,7 @@ export class DashboardComponent {
   updateTableBody(): void {
     const tbody = document.getElementById('itemsTableBody');
     if (tbody) {
-      tbody.innerHTML = this.renderItemsRows();
+      tbody.innerHTML = this.isGrouped ? this.renderGroupedItemsRows() : this.renderItemsRows();
       this.attachEventListeners();
     }
   }
@@ -652,6 +869,7 @@ export class DashboardComponent {
     // Reset form
     (document.getElementById('itemForm') as HTMLFormElement).reset();
     (document.getElementById('itemId') as HTMLInputElement).value = '';
+    (document.getElementById('itemGroupId') as HTMLInputElement).value = '';
     (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Add New Item';
     
     // Populate location and category dropdowns
@@ -684,6 +902,7 @@ export class DashboardComponent {
     (document.getElementById('itemId') as HTMLInputElement).value = item._id || '';
     (document.getElementById('itemName') as HTMLInputElement).value = item.name;
     (document.getElementById('itemCategory') as HTMLSelectElement).value = item.category || '';
+    (document.getElementById('itemGroupId') as HTMLInputElement).value = item.groupId || '';
     (document.getElementById('itemDescription') as HTMLTextAreaElement).value = item.description || '';
     (document.getElementById('itemQuantity') as HTMLInputElement).value = item.quantity.toString();
     (document.getElementById('itemLocation') as HTMLSelectElement).value = item.location || '';
@@ -711,6 +930,7 @@ export class DashboardComponent {
     const itemId = (document.getElementById('itemId') as HTMLInputElement).value;
     const name = (document.getElementById('itemName') as HTMLInputElement).value;
     const category = (document.getElementById('itemCategory') as HTMLSelectElement).value;
+    const groupId = (document.getElementById('itemGroupId') as HTMLInputElement).value;
     const description = (document.getElementById('itemDescription') as HTMLTextAreaElement).value;
     const quantity = parseInt((document.getElementById('itemQuantity') as HTMLInputElement).value);
     const location = (document.getElementById('itemLocation') as HTMLSelectElement).value;
@@ -725,6 +945,7 @@ export class DashboardComponent {
         await firestoreService.updateItem(itemId, {
           name,
           category,
+          groupId: groupId || undefined,
           description,
           quantity,
           location,
@@ -738,6 +959,7 @@ export class DashboardComponent {
         await firestoreService.createItem({
           name,
           category,
+          groupId: groupId || undefined,
           description,
           quantity,
           location,
