@@ -71,7 +71,7 @@ export class AdminPanelComponent {
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-warning text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-clock-history"></i> Pending Requests</h5>
@@ -79,7 +79,7 @@ export class AdminPanelComponent {
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-info text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> Active Loans</h5>
@@ -87,7 +87,7 @@ export class AdminPanelComponent {
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-success text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-check-circle"></i> Returned</h5>
@@ -161,7 +161,7 @@ export class AdminPanelComponent {
               <h5 class="modal-title">Loan Note</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <p id="adminNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
@@ -437,7 +437,7 @@ export class AdminPanelComponent {
               <h5 class="modal-title">Reject Loan Request</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <input type="hidden" id="rejectLoanId">
               <div class="mb-3">
                 <label for="rejectReason" class="form-label">

@@ -96,14 +96,14 @@ export class DashboardComponent {
 
         <!-- Search and Filters -->
         <div class="row mb-3">
-          <div class="col-md-5">
+          <div class="col-md-5 mb-3">
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" class="form-control" id="searchInput" 
                      placeholder="Search items by name, description, or tags...">
             </div>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2 mb-3">
             <select class="form-select" id="statusFilter">
               <option value="">All Status</option>
               <option value="${ItemStatus.AVAILABLE}">Available</option>
@@ -112,13 +112,13 @@ export class DashboardComponent {
               <option value="${ItemStatus.RETIRED}">Retired</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3 mb-3">
             <select class="form-select" id="locationFilter">
               <option value="">All Locations</option>
               ${this.getUniqueLocations().map(loc => `<option value="${loc}">${loc}</option>`).join('')}
             </select>
           </div>
-          <div class="col-md-2 d-flex align-items-center">
+          <div class="col-md-2 mb-3 d-flex align-items-center">
              <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="groupByProductToggle" ${this.isGrouped ? 'checked' : ''}>
                 <label class="form-check-label" for="groupByProductToggle">Group Products</label>
@@ -207,12 +207,14 @@ export class DashboardComponent {
     const isAdmin = this.authService.isAdmin();
     const buttons: string[] = [];
 
-    // View Loans button (visible to everyone)
-    buttons.push(`
-      <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
-        <i class="bi bi-eye"></i>
-      </button>
-    `);
+    // View Loans button (visible to admins only)
+    if (isAdmin) {
+      buttons.push(`
+        <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
+          <i class="bi bi-eye"></i>
+        </button>
+      `);
+    }
 
     // Request button for users if item is available
     if (item.status === ItemStatus.AVAILABLE && item.quantity > 0) {
@@ -263,7 +265,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Request Item</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <form id="requestForm">
                 <input type="hidden" id="requestItemId">
                 <div class="mb-3">
@@ -307,7 +309,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Loan Note</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <p id="dashboardNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
@@ -331,7 +333,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Item Loan History</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <h6 id="itemLoansTitle" class="mb-3 text-primary"></h6>
               <div class="table-responsive">
                 <table class="table table-sm table-hover">
@@ -373,7 +375,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Product Details</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <h6 id="productDetailsTitle" class="mb-3 text-primary"></h6>
               
               <div class="row mb-4">
@@ -585,6 +587,25 @@ export class DashboardComponent {
 
      // Fetch and Render Loans
      const loansList = document.getElementById('productLoansList');
+     
+     if (!this.authService.isAdmin()) {
+        if (loansList) {
+            const card = loansList.closest('.card');
+            if (card && card.parentElement) {
+                (card.parentElement as HTMLElement).style.display = 'none';
+            }
+        }
+        const inventoryList = document.getElementById('productInventoryList');
+        if (inventoryList) {
+            const card = inventoryList.closest('.card');
+            if (card && card.parentElement) {
+                card.parentElement.classList.remove('col-md-6');
+                card.parentElement.classList.add('col-md-12');
+            }
+        }
+        return;
+     }
+
      if (loansList) loansList.innerHTML = '<li class="list-group-item">Loading loans...</li>';
 
      try {
