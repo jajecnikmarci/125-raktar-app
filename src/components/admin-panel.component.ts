@@ -3,7 +3,7 @@
  * Handles loan request approvals, rejections, and returns
  */
 
-import { Loan, LoanStatus, RoleRequest, UserRole } from '../types/models';
+import { Loan, LoanStatus, RoleRequest, UserRole, User } from '../types/models';
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 
@@ -13,6 +13,7 @@ export class AdminPanelComponent {
   private activeLoans: Loan[] = [];
   private returnedLoans: Loan[] = [];
   private roleRequests: RoleRequest[] = [];
+  private users: User[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
@@ -66,6 +67,16 @@ export class AdminPanelComponent {
         console.error('Error loading role requests:', error);
         // Don't show global error, just log it. Admin might not see requests yet if index is building.
         this.roleRequests = []; 
+      }
+
+      // Load users if full admin
+      if (this.authService.getCurrentUser()?.role === UserRole.ADMIN) {
+        try {
+          this.users = await firestoreService.getAllUsers();
+        } catch (error) {
+          console.error('Error loading users:', error);
+          this.users = [];
+        }
       }
     } catch (error) {
       console.error('Error loading loans:', error);
@@ -148,6 +159,12 @@ export class AdminPanelComponent {
               ${this.roleRequests.length > 0 ? `<span class="badge bg-warning ms-2">${this.roleRequests.length}</span>` : ''}
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="users-tab" data-bs-toggle="tab" 
+                    data-bs-target="#users" type="button" role="tab">
+              User Management
+            </button>
+          </li>
           ` : ''}
         </ul>
 
@@ -172,6 +189,11 @@ export class AdminPanelComponent {
           <!-- Role Requests Tab -->
           <div class="tab-pane fade" id="roles" role="tabpanel">
             ${this.renderRoleRequests()}
+          </div>
+
+          <!-- User Management Tab -->
+          <div class="tab-pane fade" id="users" role="tabpanel">
+            ${this.renderUserManagement()}
           </div>
           ` : ''}
         </div>
@@ -524,6 +546,81 @@ export class AdminPanelComponent {
   }
 
   /**
+   * Render user management tab
+   */
+  renderUserManagement(): string {
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Current Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.users.map(user => `
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img src="${user.photoURL || 'https://via.placeholder.com/32'}" class="rounded-circle me-2" width="32" height="32">
+                        <strong>${this.escapeHtml(user.displayName)}</strong>
+                      </div>
+                    </td>
+                    <td>${this.escapeHtml(user.email)}</td>
+                    <td>
+                      <span class="badge bg-${user.role === 'admin' ? 'danger' : user.role === 'keeper' ? 'warning' : 'secondary'}">
+                        ${user.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                          Change Role
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="user">User</a></li>
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="keeper">Keeper</a></li>
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="admin">Admin</a></li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Handle user role change
+   */
+  async handleUserRoleChange(userId: string, newRole: UserRole): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) return;
+
+    try {
+      await firestoreService.adminUpdateUserRole(userId, newRole, currentUser.uid, currentUser.displayName);
+      this.showSuccess(`User role updated to ${newRole.toUpperCase()}`);
+      await this.loadLoans(); // Reloads all data including users
+      this.render();
+      this.attachEventListeners();
+    } catch (error: any) {
+      console.error('Error updating user role:', error);
+      this.showError('Failed to update user role.');
+    }
+  }
+
+  /**
    * Render rejection modal
    */
   renderRejectionModal(): string {
@@ -621,6 +718,16 @@ export class AdminPanelComponent {
       (btn as HTMLElement).onclick = () => {
         if (requestId) this.handleRejectRole(requestId);
       };
+    });
+
+    // User Role Actions
+    document.querySelectorAll('.user-role-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const userId = (e.currentTarget as HTMLElement).dataset.userId;
+        const role = (e.currentTarget as HTMLElement).dataset.role as UserRole;
+        if (userId && role) this.handleUserRoleChange(userId, role);
+      });
     });
   }
 

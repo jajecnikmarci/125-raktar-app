@@ -10,8 +10,8 @@ service cloud.firestore {
     
     // Helper function to check if user is admin OR keeper
     function isAdmin() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isSignedIn() && (userRole == 'admin' || userRole == 'keeper');
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'keeper'];
     }
     
     // Helper function to check if user owns the document
@@ -68,10 +68,13 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
-      // Users can create requests for themselves
-      allow create: if isSignedIn() && 
-                      request.resource.data.userId == request.auth.uid &&
-                      request.resource.data.status == 'pending';
+      // Users can create requests for themselves (pending only)
+      // Admins can create requests for anyone (e.g. auto-approved)
+      allow create: if isSignedIn() && (
+                      (request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.status == 'pending') ||
+                      isAdmin()
+                    );
       // Only admins/keepers can update (approve/reject)
       allow update: if isAdmin();
     }

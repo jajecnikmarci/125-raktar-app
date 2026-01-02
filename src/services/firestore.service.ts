@@ -903,6 +903,48 @@ class FirestoreService {
       throw error;
     }
   }
+
+  /**
+   * Admin update user role (direct update with auto-approved request)
+   */
+  async adminUpdateUserRole(targetUserId: string, newRole: import('../types/models').UserRole, adminId: string, adminName: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const userDoc = doc(db, 'users', targetUserId);
+      const userSnapshot = await getDoc(userDoc);
+      
+      if (!userSnapshot.exists()) {
+        throw new Error('User not found');
+      }
+      
+      const userData = userSnapshot.data() as User;
+      const now = Timestamp.now();
+
+      // 1. Create an approved role request record for audit
+      const requestsCol = collection(db, 'role_requests');
+      await addDoc(requestsCol, {
+        userId: targetUserId,
+        userName: userData.displayName,
+        userEmail: userData.email,
+        requestedRole: newRole,
+        status: 'approved',
+        requestedAt: now,
+        processedAt: now,
+        processedBy: adminId,
+        reason: `Changed by admin ${adminName}`
+      });
+
+      // 2. Update user role
+      await updateDoc(userDoc, {
+        role: newRole
+      });
+      
+      console.log(`✓ User ${targetUserId} role updated to ${newRole} by admin`);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  }
 }
 
 export const firestoreService = new FirestoreService();
