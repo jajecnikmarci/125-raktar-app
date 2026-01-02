@@ -3,7 +3,7 @@
  * Handles loan request approvals, rejections, and returns
  */
 
-import { Loan, LoanStatus } from '../types/models';
+import { Loan, LoanStatus, RoleRequest, UserRole, User } from '../types/models';
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 
@@ -12,6 +12,8 @@ export class AdminPanelComponent {
   private pendingLoans: Loan[] = [];
   private activeLoans: Loan[] = [];
   private returnedLoans: Loan[] = [];
+  private roleRequests: RoleRequest[] = [];
+  private users: User[] = [];
   private container: HTMLElement;
 
   constructor(containerId: string) {
@@ -47,12 +49,38 @@ export class AdminPanelComponent {
    */
   async loadLoans(): Promise<void> {
     try {
-      this.pendingLoans = await firestoreService.getLoans(LoanStatus.PENDING);
-      this.activeLoans = await firestoreService.getLoans(LoanStatus.APPROVED);
-      this.returnedLoans = await firestoreService.getLoans(LoanStatus.RETURNED);
+      // Load loans
+      const [pending, active, returned] = await Promise.all([
+        firestoreService.getLoans(LoanStatus.PENDING),
+        firestoreService.getLoans(LoanStatus.APPROVED),
+        firestoreService.getLoans(LoanStatus.RETURNED)
+      ]);
+      
+      this.pendingLoans = pending;
+      this.activeLoans = active;
+      this.returnedLoans = returned;
+
+      // Load role requests separately to avoid blocking
+      try {
+        this.roleRequests = await firestoreService.getRoleRequests();
+      } catch (error) {
+        console.error('Error loading role requests:', error);
+        // Don't show global error, just log it. Admin might not see requests yet if index is building.
+        this.roleRequests = []; 
+      }
+
+      // Load users if full admin
+      if (this.authService.getCurrentUser()?.role === UserRole.ADMIN) {
+        try {
+          this.users = await firestoreService.getAllUsers();
+        } catch (error) {
+          console.error('Error loading users:', error);
+          this.users = [];
+        }
+      }
     } catch (error) {
       console.error('Error loading loans:', error);
-      this.showError('Failed to load loan requests.');
+      this.showError('Failed to load data.');
     }
   }
 
@@ -60,6 +88,9 @@ export class AdminPanelComponent {
    * Render admin panel
    */
   render(): void {
+    const user = this.authService.getCurrentUser();
+    const isFullAdmin = user?.role === UserRole.ADMIN;
+
     this.container.innerHTML = `
       <div class="container-fluid py-4">
         <!-- Header -->
@@ -120,6 +151,21 @@ export class AdminPanelComponent {
               ${this.returnedLoans.length > 0 ? `<span class="badge bg-success ms-2">${this.returnedLoans.length}</span>` : ''}
             </button>
           </li>
+          ${isFullAdmin ? `
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="roles-tab" data-bs-toggle="tab" 
+                    data-bs-target="#roles" type="button" role="tab">
+              Role Requests
+              ${this.roleRequests.length > 0 ? `<span class="badge bg-warning ms-2">${this.roleRequests.length}</span>` : ''}
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="users-tab" data-bs-toggle="tab" 
+                    data-bs-target="#users" type="button" role="tab">
+              User Management
+            </button>
+          </li>
+          ` : ''}
         </ul>
 
         <!-- Tab Content -->
@@ -138,6 +184,18 @@ export class AdminPanelComponent {
           <div class="tab-pane fade" id="returned" role="tabpanel">
             ${this.renderReturnedLoans()}
           </div>
+
+          ${isFullAdmin ? `
+          <!-- Role Requests Tab -->
+          <div class="tab-pane fade" id="roles" role="tabpanel">
+            ${this.renderRoleRequests()}
+          </div>
+
+          <!-- User Management Tab -->
+          <div class="tab-pane fade" id="users" role="tabpanel">
+            ${this.renderUserManagement()}
+          </div>
+          ` : ''}
         </div>
       </div>
 
@@ -426,6 +484,143 @@ export class AdminPanelComponent {
   }
 
   /**
+   * Render role requests
+   */
+  renderRoleRequests(): string {
+    if (this.roleRequests.length === 0) {
+      return `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> No pending role requests.
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>User</th>
+                  <th>Current Role</th>
+                  <th>Requested Role</th>
+                  <th>Reason</th>
+                  <th>Requested Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.roleRequests.map(req => `
+                  <tr>
+                    <td>
+                      <div>${this.escapeHtml(req.userName)}</div>
+                      <small class="text-muted">${this.escapeHtml(req.userEmail)}</small>
+                    </td>
+                    <td><span class="badge bg-secondary">User</span></td>
+                    <td><span class="badge bg-primary">${req.requestedRole.toUpperCase()}</span></td>
+                    <td>${this.escapeHtml(req.reason || '-')}</td>
+                    <td>${this.formatDate(req.requestedAt)}</td>
+                    <td>
+                      <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-success approve-role-btn" 
+                                data-request-id="${req._id}" 
+                                title="Approve Request">
+                          <i class="bi bi-check-circle"></i> Approve
+                        </button>
+                        <button class="btn btn-sm btn-danger reject-role-btn" 
+                                data-request-id="${req._id}" 
+                                title="Reject Request">
+                          <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render user management tab
+   */
+  renderUserManagement(): string {
+    return `
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Current Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.users.map(user => `
+                  <tr>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img src="${user.photoURL || 'https://via.placeholder.com/32'}" class="rounded-circle me-2" width="32" height="32">
+                        <strong>${this.escapeHtml(user.displayName)}</strong>
+                      </div>
+                    </td>
+                    <td>${this.escapeHtml(user.email)}</td>
+                    <td>
+                      <span class="badge bg-${user.role === 'admin' ? 'danger' : user.role === 'keeper' ? 'warning' : 'secondary'}">
+                        ${user.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                          Change Role
+                        </button>
+                        <ul class="dropdown-menu">
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="user">User</a></li>
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="keeper">Keeper</a></li>
+                          <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="admin">Admin</a></li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Handle user role change
+   */
+  async handleUserRoleChange(userId: string, newRole: UserRole): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    if (!confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) return;
+
+    try {
+      await firestoreService.adminUpdateUserRole(userId, newRole, currentUser.uid, currentUser.displayName);
+      this.showSuccess(`User role updated to ${newRole.toUpperCase()}`);
+      await this.loadLoans(); // Reloads all data including users
+      this.render();
+      this.attachEventListeners();
+    } catch (error: any) {
+      console.error('Error updating user role:', error);
+      this.showError('Failed to update user role.');
+    }
+  }
+
+  /**
    * Render rejection modal
    */
   renderRejectionModal(): string {
@@ -508,6 +703,74 @@ export class AdminPanelComponent {
         if (note) this.openNoteModal(note);
       });
     });
+
+    // Approve Role buttons
+    document.querySelectorAll('.approve-role-btn').forEach(btn => {
+      const requestId = (btn as HTMLElement).dataset.requestId;
+      (btn as HTMLElement).onclick = () => {
+        if (requestId) this.handleApproveRole(requestId);
+      };
+    });
+
+    // Reject Role buttons
+    document.querySelectorAll('.reject-role-btn').forEach(btn => {
+      const requestId = (btn as HTMLElement).dataset.requestId;
+      (btn as HTMLElement).onclick = () => {
+        if (requestId) this.handleRejectRole(requestId);
+      };
+    });
+
+    // User Role Actions
+    document.querySelectorAll('.user-role-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const userId = (e.currentTarget as HTMLElement).dataset.userId;
+        const role = (e.currentTarget as HTMLElement).dataset.role as UserRole;
+        if (userId && role) this.handleUserRoleChange(userId, role);
+      });
+    });
+  }
+
+  /**
+   * Handle role approval
+   */
+  async handleApproveRole(requestId: string): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    if (!confirm('Approve this role request?')) return;
+
+    try {
+      await firestoreService.approveRoleRequest(requestId, currentUser.uid);
+      this.showSuccess('Role request approved successfully!');
+      await this.loadLoans(); // reloads requests too
+      this.render();
+      this.attachEventListeners();
+    } catch (error: any) {
+      console.error('Error approving role:', error);
+      this.showError('Failed to approve role request.');
+    }
+  }
+
+  /**
+   * Handle role rejection
+   */
+  async handleRejectRole(requestId: string): Promise<void> {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) return;
+
+    if (!confirm('Reject this role request?')) return;
+
+    try {
+      await firestoreService.rejectRoleRequest(requestId, currentUser.uid);
+      this.showSuccess('Role request rejected.');
+      await this.loadLoans(); // reloads requests too
+      this.render();
+      this.attachEventListeners();
+    } catch (error: any) {
+      console.error('Error rejecting role:', error);
+      this.showError('Failed to reject role request.');
+    }
   }
 
   /**

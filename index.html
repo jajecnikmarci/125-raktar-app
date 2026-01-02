@@ -131,6 +131,9 @@
                 <span id="userName">User</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" id="profileBtn">
+                  <i class="bi bi-person me-2"></i>Profile
+                </a></li>
                 <li><a class="dropdown-item text-danger" href="#" id="signOutBtn">
                   <i class="bi bi-box-arrow-right me-2"></i>Sign Out
                 </a></li>
@@ -174,6 +177,66 @@
 
   <!-- Modals -->
   
+  <!-- Profile Modal -->
+  <div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">User Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="text-center mb-4">
+            <img id="profileAvatar" src="" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
+            <h4 id="profileName"></h4>
+            <p id="profileEmail" class="text-muted"></p>
+            <span id="profileRole" class="badge bg-primary"></span>
+          </div>
+          
+          <hr>
+          
+          <div id="roleRequestSection">
+            <h5>Request Role Change</h5>
+            <p class="text-muted small">Select a role to request access.</p>
+            <form id="roleRequestForm">
+              <div class="mb-3">
+                <label class="form-label">Role</label>
+                <select class="form-select" id="requestedRole" required>
+                  <option value="">Select a role...</option>
+                  <option value="keeper">Keeper</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <textarea class="form-control" id="requestReason" rows="2" placeholder="Why do you need this role?"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Submit Request</button>
+            </form>
+          </div>
+          
+          <hr>
+          
+          <div id="roleRequestHistory" style="display: none;">
+            <h5>Role History</h5>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="roleRequestTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Request Item Modal -->
   <div class="modal fade" id="requestModal" tabindex="-1">
     <div class="modal-dialog">

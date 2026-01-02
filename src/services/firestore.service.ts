@@ -778,6 +778,173 @@ class FirestoreService {
       throw error;
     }
   }
+
+  // ==================== ROLE REQUESTS ====================
+
+  /**
+   * Create a role request
+   */
+  async createRoleRequest(request: Omit<import('../types/models').RoleRequest, '_id' | 'requestedAt' | 'status'>): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const now = Timestamp.now();
+
+      await addDoc(requestsCol, {
+        ...request,
+        status: 'pending',
+        requestedAt: now
+      });
+      
+      console.log('✓ Role request created for:', request.userId);
+    } catch (error) {
+      console.error('Error creating role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all pending role requests
+   */
+  async getRoleRequests(): Promise<import('../types/models').RoleRequest[]> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const q = query(requestsCol, where('status', '==', 'pending'), orderBy('requestedAt', 'desc'));
+      
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date()
+      })) as import('../types/models').RoleRequest[];
+    } catch (error) {
+      console.error('Error fetching role requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get role requests for a specific user
+   */
+  async getUserRoleRequests(userId: string): Promise<import('../types/models').RoleRequest[]> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const q = query(requestsCol, where('userId', '==', userId), orderBy('requestedAt', 'desc'));
+      
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        processedAt: doc.data().processedAt?.toDate?.() || undefined
+      })) as import('../types/models').RoleRequest[];
+    } catch (error) {
+      console.error('Error fetching user role requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Approve a role request
+   */
+  async approveRoleRequest(requestId: string, adminId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestDoc = doc(db, 'role_requests', requestId);
+      const requestSnapshot = await getDoc(requestDoc);
+      
+      if (!requestSnapshot.exists()) {
+        throw new Error('Request not found');
+      }
+      
+      const requestData = requestSnapshot.data();
+      
+      // Update user role
+      const userDoc = doc(db, 'users', requestData.userId);
+      await updateDoc(userDoc, {
+        role: requestData.requestedRole
+      });
+
+      // Update request status
+      await updateDoc(requestDoc, {
+        status: 'approved',
+        processedBy: adminId,
+        processedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Role request approved:', requestId);
+    } catch (error) {
+      console.error('Error approving role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reject a role request
+   */
+  async rejectRoleRequest(requestId: string, adminId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestDoc = doc(db, 'role_requests', requestId);
+      
+      await updateDoc(requestDoc, {
+        status: 'rejected',
+        processedBy: adminId,
+        processedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Role request rejected:', requestId);
+    } catch (error) {
+      console.error('Error rejecting role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin update user role (direct update with auto-approved request)
+   */
+  async adminUpdateUserRole(targetUserId: string, newRole: import('../types/models').UserRole, adminId: string, adminName: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const userDoc = doc(db, 'users', targetUserId);
+      const userSnapshot = await getDoc(userDoc);
+      
+      if (!userSnapshot.exists()) {
+        throw new Error('User not found');
+      }
+      
+      const userData = userSnapshot.data() as User;
+      const now = Timestamp.now();
+
+      // 1. Create an approved role request record for audit
+      const requestsCol = collection(db, 'role_requests');
+      await addDoc(requestsCol, {
+        userId: targetUserId,
+        userName: userData.displayName,
+        userEmail: userData.email,
+        requestedRole: newRole,
+        status: 'approved',
+        requestedAt: now,
+        processedAt: now,
+        processedBy: adminId,
+        reason: `Changed by admin ${adminName}`
+      });
+
+      // 2. Update user role
+      await updateDoc(userDoc, {
+        role: newRole
+      });
+      
+      console.log(`✓ User ${targetUserId} role updated to ${newRole} by admin`);
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  }
 }
 
 export const firestoreService = new FirestoreService();

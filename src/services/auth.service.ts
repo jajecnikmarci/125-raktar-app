@@ -229,10 +229,10 @@ class AuthService {
   }
 
   /**
-   * Check if user is admin
+   * Check if user is admin or keeper
    */
   isAdmin(): boolean {
-    return this.currentUser?.role === UserRole.ADMIN;
+    return this.currentUser?.role === UserRole.ADMIN || this.currentUser?.role === UserRole.KEEPER;
   }
 
   /**
