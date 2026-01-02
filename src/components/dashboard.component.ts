@@ -263,7 +263,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Request Item</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <form id="requestForm">
                 <input type="hidden" id="requestItemId">
                 <div class="mb-3">
@@ -307,7 +307,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Loan Note</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <p id="dashboardNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
@@ -331,7 +331,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Item Loan History</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <h6 id="itemLoansTitle" class="mb-3 text-primary"></h6>
               <div class="table-responsive">
                 <table class="table table-sm table-hover">
@@ -373,7 +373,7 @@ export class DashboardComponent {
               <h5 class="modal-title">Product Details</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <h6 id="productDetailsTitle" class="mb-3 text-primary"></h6>
               
               <div class="row mb-4">

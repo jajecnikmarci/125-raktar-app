@@ -161,7 +161,7 @@ export class AdminPanelComponent {
               <h5 class="modal-title">Loan Note</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <p id="adminNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
@@ -437,7 +437,7 @@ export class AdminPanelComponent {
               <h5 class="modal-title">Reject Loan Request</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <input type="hidden" id="rejectLoanId">
               <div class="mb-3">
                 <label for="rejectReason" class="form-label">
