@@ -425,20 +425,20 @@ export class DashboardComponent {
     // Render Groups
     Object.keys(groups).forEach(groupId => {
         const groupItems = groups[groupId];
-        const representative = groupItems[0];
+        // Aggregate unique tags from all items in the group
+        const allTags = [...new Set(groupItems.flatMap(i => i.tags || []))];
         const totalQty = groupItems.reduce((sum, i) => sum + i.quantity, 0);
         const locations = [...new Set(groupItems.map(i => i.location))].join(', ');
         
         html += `
           <tr class="table-info">
             <td>
-                <strong>${this.escapeHtml(representative.name)}</strong>
-                <br><small class="text-muted">Group ID: ${this.escapeHtml(groupId)}</small>
+                <strong>${this.escapeHtml(groupId)}</strong>
             </td>
             <td>${this.escapeHtml(locations)}</td>
             <td><span class="badge bg-primary">${totalQty} Total</span></td>
              <td>
-              ${(representative.tags || []).map(tag => 
+              ${allTags.map(tag => 
                 `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
               ).join('')}
             </td>
@@ -493,14 +493,12 @@ export class DashboardComponent {
      const groupItems = this.allItems.filter(i => i.groupId === groupId);
      if (groupItems.length === 0) return;
 
-     const representative = groupItems[0];
-     
      // Show modal
      const modal = new (window as any).bootstrap.Modal(document.getElementById('productDetailsModal'));
      modal.show();
      
      const titleEl = document.getElementById('productDetailsTitle');
-     if (titleEl) titleEl.textContent = `${representative.name} (Group: ${groupId})`;
+     if (titleEl) titleEl.textContent = `Group: ${groupId}`;
      
      // Render Inventory Breakdown
      const inventoryList = document.getElementById('productInventoryList');
@@ -508,9 +506,31 @@ export class DashboardComponent {
         inventoryList.innerHTML = groupItems.map(item => `
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location)}</span>
-                <span class="badge bg-secondary rounded-pill">${item.quantity}</span>
+                <div>
+                    <span class="badge bg-secondary rounded-pill me-2">${item.quantity}</span>
+                    ${item.status === ItemStatus.AVAILABLE && item.quantity > 0 ? `
+                        <button class="btn btn-sm btn-success request-from-details-btn" 
+                                data-item-id="${item._id}" title="Request Item">
+                            <i class="bi bi-hand-thumbs-up"></i>
+                        </button>
+                    ` : ''}
+                </div>
             </li>
         `).join('');
+
+        // Attach event listeners for request buttons
+        inventoryList.querySelectorAll('.request-from-details-btn').forEach(btn => {
+            const itemId = (btn as HTMLElement).dataset.itemId;
+            (btn as HTMLElement).onclick = () => {
+                if (itemId) {
+                    // Optional: Close details modal first if stacking is an issue
+                    // const detailsModal = (window as any).bootstrap.Modal.getInstance(document.getElementById('productDetailsModal'));
+                    // detailsModal?.hide();
+                    
+                    this.openRequestModal(itemId);
+                }
+            };
+        });
      }
 
      // Fetch and Render Loans
