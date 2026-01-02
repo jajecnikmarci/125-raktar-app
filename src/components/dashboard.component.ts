@@ -145,6 +145,9 @@ export class DashboardComponent {
 
       <!-- Request Modal -->
       ${this.renderRequestModal()}
+      
+      <!-- Item Loans Modal -->
+      ${this.renderItemLoansModal()}
     `;
   }
 
@@ -193,6 +196,13 @@ export class DashboardComponent {
   renderActionButtons(item: Item): string {
     const isAdmin = this.authService.isAdmin();
     const buttons: string[] = [];
+
+    // View Loans button (visible to everyone)
+    buttons.push(`
+      <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
+        <i class="bi bi-eye"></i>
+      </button>
+    `);
 
     // Request button for users if item is available
     if (item.status === ItemStatus.AVAILABLE && item.quantity > 0) {
@@ -276,6 +286,46 @@ export class DashboardComponent {
   }
 
   /**
+   * Render Item Loans Modal
+   */
+  renderItemLoansModal(): string {
+    return `
+      <div class="modal fade" id="itemLoansModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Item Loan History</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <h6 id="itemLoansTitle" class="mb-3 text-primary"></h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead class="table-light">
+                    <tr>
+                      <th>User</th>
+                      <th>Qty</th>
+                      <th>Status</th>
+                      <th>Requested</th>
+                      <th>Returned</th>
+                    </tr>
+                  </thead>
+                  <tbody id="itemLoansTableBody">
+                    <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Attach event listeners
    */
   attachEventListeners(): void {
@@ -293,6 +343,14 @@ export class DashboardComponent {
       locationFilter.addEventListener('change', () => this.applyFiltersAndSearch());
     }
     
+    // View Loans buttons
+    document.querySelectorAll('.view-loans-btn').forEach(btn => {
+      const itemId = (btn as HTMLElement).dataset.itemId;
+      (btn as HTMLElement).onclick = () => {
+        if (itemId) this.viewLoans(itemId);
+      };
+    });
+
     // Request buttons (inline onclick is better for dynamic content)
     document.querySelectorAll('.request-btn').forEach(btn => {
       const itemId = (btn as HTMLElement).dataset.itemId;
@@ -336,6 +394,69 @@ export class DashboardComponent {
         if (itemId) this.deleteItem(itemId);
       };
     });
+  }
+
+  /**
+   * View loans for a specific item
+   */
+  async viewLoans(itemId: string): Promise<void> {
+    const item = this.items.find(i => i._id === itemId);
+    if (!item) return;
+
+    // Show modal
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('itemLoansModal'));
+    modal.show();
+
+    const titleEl = document.getElementById('itemLoansTitle');
+    if (titleEl) titleEl.textContent = `Loans for: ${item.name}`;
+
+    const tbody = document.getElementById('itemLoansTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+
+    try {
+      const loans = await firestoreService.getLoansByItem(itemId);
+      
+      if (!tbody) return;
+
+      if (loans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No history found for this item.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = loans.map(loan => `
+        <tr>
+          <td>
+            ${this.escapeHtml(loan.userName)}<br>
+            <small class="text-muted">${this.escapeHtml(loan.userEmail)}</small>
+          </td>
+          <td>${loan.quantity}</td>
+          <td>
+            <span class="badge ${this.getLoanStatusColor(loan.status)}">
+              ${loan.status}
+            </span>
+          </td>
+          <td>${new Date(loan.requestedAt).toLocaleDateString()}</td>
+          <td>${loan.returnedAt ? new Date(loan.returnedAt).toLocaleDateString() : '-'}</td>
+        </tr>
+      `).join('');
+
+    } catch (error) {
+      console.error('Error fetching item loans:', error);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load history.</td></tr>';
+    }
+  }
+
+  /**
+   * Get color for loan status
+   */
+  getLoanStatusColor(status: string): string {
+    switch (status) {
+      case 'approved': return 'bg-success';
+      case 'pending': return 'bg-warning';
+      case 'returned': return 'bg-secondary';
+      case 'rejected': return 'bg-danger';
+      default: return 'bg-light text-dark';
+    }
   }
 
   /**
