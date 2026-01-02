@@ -96,14 +96,14 @@ export class DashboardComponent {
 
         <!-- Search and Filters -->
         <div class="row mb-3">
-          <div class="col-md-5">
+          <div class="col-md-5 mb-3">
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" class="form-control" id="searchInput" 
                      placeholder="Search items by name, description, or tags...">
             </div>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2 mb-3">
             <select class="form-select" id="statusFilter">
               <option value="">All Status</option>
               <option value="${ItemStatus.AVAILABLE}">Available</option>
@@ -112,13 +112,13 @@ export class DashboardComponent {
               <option value="${ItemStatus.RETIRED}">Retired</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3 mb-3">
             <select class="form-select" id="locationFilter">
               <option value="">All Locations</option>
               ${this.getUniqueLocations().map(loc => `<option value="${loc}">${loc}</option>`).join('')}
             </select>
           </div>
-          <div class="col-md-2 d-flex align-items-center">
+          <div class="col-md-2 mb-3 d-flex align-items-center">
              <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="groupByProductToggle" ${this.isGrouped ? 'checked' : ''}>
                 <label class="form-check-label" for="groupByProductToggle">Group Products</label>

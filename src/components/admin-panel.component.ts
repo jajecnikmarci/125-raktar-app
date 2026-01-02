@@ -71,7 +71,7 @@ export class AdminPanelComponent {
 
         <!-- Statistics Cards -->
         <div class="row mb-4">
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-warning text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-clock-history"></i> Pending Requests</h5>
@@ -79,7 +79,7 @@ export class AdminPanelComponent {
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-info text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> Active Loans</h5>
@@ -87,7 +87,7 @@ export class AdminPanelComponent {
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 mb-3">
             <div class="card bg-success text-white">
               <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-check-circle"></i> Returned</h5>

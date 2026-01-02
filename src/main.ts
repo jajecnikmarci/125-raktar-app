@@ -154,6 +154,7 @@ class App {
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
     const adminLink = document.getElementById('adminLink');
+    const mobileAdminLink = document.getElementById('mobileAdminLink');
 
     if (userName) userName.textContent = user.displayName;
     if (userAvatar) {
@@ -165,6 +166,9 @@ class App {
     const isAdmin = this.authService.isAdmin();
     if (adminLink) {
       adminLink.style.display = isAdmin ? 'block' : 'none';
+    }
+    if (mobileAdminLink) {
+      mobileAdminLink.style.display = isAdmin ? 'block' : 'none';
     }
   }
 

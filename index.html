@@ -117,6 +117,13 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
+             <!-- Mobile Navigation Links -->
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="dashboard"><i class="bi bi-grid me-2"></i>Dashboard</a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="my-loans"><i class="bi bi-journal-bookmark me-2"></i>My Loans</a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="settings"><i class="bi bi-gear me-2"></i>Settings</a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="admin" id="mobileAdminLink" style="display: none;"><i class="bi bi-shield-check me-2"></i>Admin Panel</a></li>
+             <li class="nav-item d-md-none"><hr class="dropdown-divider text-white-50"></li>
+             
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" 
                  id="userDropdown" role="button" data-bs-toggle="dropdown">
@@ -137,7 +144,7 @@
     <div class="container-fluid">
       <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-2 sidebar">
+        <div class="col-md-2 sidebar d-none d-md-block">
           <nav class="nav nav-pills flex-column">
             <a class="nav-link active" href="#" data-view="dashboard">
               <i class="bi bi-grid me-2"></i>Dashboard
@@ -155,7 +162,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="col-md-10">
+        <div class="col-md-10 col-12">
           <div id="mainContent"></div>
         </div>
       </div>
