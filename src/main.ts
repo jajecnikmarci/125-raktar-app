@@ -65,6 +65,14 @@ class App {
         await this.handleRoleRequest();
       });
     }
+
+    const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
+    if (languageSelect) {
+      languageSelect.addEventListener('change', (e) => {
+        const newLocale = (e.target as HTMLSelectElement).value as 'hu' | 'en';
+        i18nService.setLocale(newLocale);
+      });
+    }
   }
 
   /**
@@ -79,6 +87,7 @@ class App {
     const name = document.getElementById('profileName');
     const email = document.getElementById('profileEmail');
     const role = document.getElementById('profileRole');
+    const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
     
     if (avatar) avatar.src = user.photoURL || 'https://via.placeholder.com/100';
     if (name) name.textContent = user.displayName;
@@ -86,6 +95,11 @@ class App {
     if (role) {
       role.textContent = i18nService.t(`common.roles.${user.role}`);
       role.className = `badge ${user.role === 'admin' || user.role === 'keeper' ? 'bg-danger' : 'bg-primary'}`;
+    }
+
+    // Set current language
+    if (languageSelect) {
+      languageSelect.value = i18nService.getLocale();
     }
 
     // Load role request history

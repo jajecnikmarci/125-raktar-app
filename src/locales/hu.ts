@@ -70,6 +70,12 @@ export const hu = {
     selectRoleDescription: 'Válassz egy szerepkört a hozzáférés igényléséhez.',
     selectRolePlaceholder: 'Válassz szerepkört...',
     roleHistory: 'Szerepkör előzmények',
+    language: 'Nyelv',
+    selectLanguage: 'Válasszon nyelvet',
+    languages: {
+      en: 'Angol',
+      hu: 'Magyar',
+    },
   },
   nav: {
     dashboard: 'Irányítópult',

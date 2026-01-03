@@ -70,6 +70,12 @@ export const en = {
     selectRoleDescription: 'Select a role to request access.',
     selectRolePlaceholder: 'Select a role...',
     roleHistory: 'Role History',
+    language: 'Language',
+    selectLanguage: 'Select Language',
+    languages: {
+      en: 'English',
+      hu: 'Hungarian',
+    },
   },
   nav: {
     dashboard: 'Dashboard',
