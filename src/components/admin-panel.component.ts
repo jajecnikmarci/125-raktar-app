@@ -56,7 +56,7 @@ export class AdminPanelComponent {
         firestoreService.getLoans(LoanStatus.APPROVED),
         firestoreService.getLoans(LoanStatus.RETURNED)
       ]);
-      
+
       this.pendingLoans = pending;
       this.activeLoans = active;
       this.returnedLoans = returned;
@@ -67,7 +67,7 @@ export class AdminPanelComponent {
       } catch (error) {
         console.error('Error loading role requests:', error);
         // Don't show global error, just log it. Admin might not see requests yet if index is building.
-        this.roleRequests = []; 
+        this.roleRequests = [];
       }
 
       // Load users if full admin
@@ -238,7 +238,7 @@ export class AdminPanelComponent {
   openNoteModal(note: string): void {
     const modalEl = document.getElementById('adminNoteModal');
     const contentEl = document.getElementById('adminNoteContent');
-    
+
     if (modalEl && contentEl) {
       contentEl.textContent = note;
       const modal = new (window as any).bootstrap.Modal(modalEl);
@@ -370,8 +370,8 @@ export class AdminPanelComponent {
    */
   renderActiveRow(loan: Loan): string {
     const daysOut = this.calculateDaysOut(loan.approvedAt || loan.requestedAt);
-    const isOverdue = loan.expectedReturnDate && 
-                      new Date(loan.expectedReturnDate) < new Date();
+    const isOverdue = loan.expectedReturnDate &&
+      new Date(loan.expectedReturnDate) < new Date();
 
     return `
       <tr data-loan-id="${loan._id}" ${isOverdue ? 'class="table-danger"' : ''}>
@@ -453,7 +453,7 @@ export class AdminPanelComponent {
   renderReturnedRow(loan: Loan): string {
     const duration = this.calculateDuration(loan.approvedAt || loan.requestedAt, loan.returnedAt);
     const wasOverdue = loan.expectedReturnDate && loan.returnedAt &&
-                       new Date(loan.returnedAt) > new Date(loan.expectedReturnDate);
+      new Date(loan.returnedAt) > new Date(loan.expectedReturnDate);
 
     return `
       <tr data-loan-id="${loan._id}">
@@ -778,19 +778,30 @@ export class AdminPanelComponent {
    * Handle approve action
    */
   async handleApprove(loanId: string): Promise<void> {
+    console.log('🚀 handleApprove called for loanId:', loanId);
     const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
+    console.log('👤 Current user:', currentUser);
 
-    if (!confirm(i18nService.t('common.confirm'))) return;
+    if (!currentUser) {
+      console.error('❌ No current user found');
+      return;
+    }
+
+    if (!confirm(i18nService.t('common.confirm'))) {
+      console.log('⏹️ Approval cancelled by user');
+      return;
+    }
 
     try {
+      console.log('⏳ Approving loan in Firestore...');
       await firestoreService.approveLoan(loanId, currentUser.uid);
+      console.log('✅ Loan approved successfully');
       this.showSuccess(i18nService.t('admin.loanApproved'));
       await this.loadLoans();
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
-      console.error('Error approving loan:', error);
+      console.error('❌ Error approving loan:', error);
       this.showError(error?.message || i18nService.t('common.error'));
     }
   }
@@ -866,12 +877,12 @@ export class AdminPanelComponent {
    */
   calculateDuration(startDate?: Date, endDate?: Date): string {
     if (!startDate || !endDate) return 'N/A';
-    
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diff = end.getTime() - start.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days === 0) return 'Same day';
     if (days === 1) return '1 day';
     return `${days} days`;
@@ -920,9 +931,9 @@ export class AdminPanelComponent {
     if (!toastContainer) return;
 
     const toastId = `toast-${Date.now()}`;
-    const icon = type === 'success' ? 'check-circle-fill' : 
-                 type === 'danger' ? 'exclamation-triangle-fill' : 
-                 type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
+    const icon = type === 'success' ? 'check-circle-fill' :
+      type === 'danger' ? 'exclamation-triangle-fill' :
+        type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
 
     const toastHTML = `
       <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
@@ -940,7 +951,7 @@ export class AdminPanelComponent {
     if (toastElement) {
       const toast = new (window as any).bootstrap.Toast(toastElement, { delay: 3000 });
       toast.show();
-      
+
       // Remove from DOM after hidden
       toastElement.addEventListener('hidden.bs.toast', () => {
         toastElement.remove();
