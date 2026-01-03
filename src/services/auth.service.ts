@@ -15,6 +15,7 @@ import {
 } from 'firebase/auth';
 import { User, UserRole } from '../types/models';
 import { firebaseConfig } from '../config/firebase.config';
+import { i18nService } from './i18n.service';
 
 // Export app instance for use in Firestore service
 export let app: FirebaseApp;
@@ -152,7 +153,7 @@ class AuthService {
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           console.error('❌ Timeout waiting for user data from Firestore');
-          reject(new Error('Authentication timeout - Firestore may not be configured'));
+          reject(new Error(i18nService.t('auth.timeout')));
         }, 10000); // 10 seconds timeout
 
         const checkUser = () => {
@@ -170,18 +171,18 @@ class AuthService {
       console.error('❌ Sign-in error:', error);
       
       // Provide user-friendly error messages
-      let errorMessage = 'Failed to sign in. Please try again.';
+      let errorMessage = i18nService.t('auth.failedSignIn');
       
       if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Sign-in cancelled. Please try again.';
+        errorMessage = i18nService.t('auth.popupClosed');
       } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Popup blocked. Please allow popups for this site.';
+        errorMessage = i18nService.t('auth.popupBlocked');
       } else if (error.code === 'auth/unauthorized-domain') {
-        errorMessage = 'Domain not authorized. Please check Firebase settings.';
+        errorMessage = i18nService.t('auth.domainUnauthorized');
       } else if (error.code === 'auth/invalid-api-key') {
-        errorMessage = 'Invalid Firebase API key. Please check your .env file.';
+        errorMessage = i18nService.t('auth.invalidApiKey');
       } else if (error.message?.includes('Firestore')) {
-        errorMessage = 'Authentication successful but database connection failed. Please check Firestore configuration.';
+        errorMessage = i18nService.t('auth.firestoreError');
       }
       
       error.userMessage = errorMessage;

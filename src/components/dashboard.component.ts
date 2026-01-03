@@ -6,6 +6,7 @@
 import { Item, ItemStatus, Location, Category } from '../types/models';
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
+import { i18nService } from '../services/i18n.service';
 
 export class DashboardComponent {
   private authService = getAuthService();
@@ -46,7 +47,7 @@ export class DashboardComponent {
       this.items = [...this.allItems];
     } catch (error) {
       console.error('Error loading items:', error);
-      this.showError('Failed to load items. Please try again.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -83,12 +84,12 @@ export class DashboardComponent {
         <!-- Header -->
         <div class="row mb-4">
           <div class="col-md-6">
-            <h2><i class="bi bi-box-seam"></i> Inventory Dashboard</h2>
+            <h2><i class="bi bi-box-seam"></i> ${i18nService.t('dashboard.title')}</h2>
           </div>
           <div class="col-md-6 text-end">
             ${isAdmin ? `
               <button class="btn btn-primary" id="addItemBtn">
-                <i class="bi bi-plus-circle"></i> Add Item
+                <i class="bi bi-plus-circle"></i> ${i18nService.t('dashboard.addItem')}
               </button>
             ` : ''}
           </div>
@@ -100,28 +101,28 @@ export class DashboardComponent {
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
               <input type="text" class="form-control" id="searchInput" 
-                     placeholder="Search items by name, description, or tags...">
+                     placeholder="${i18nService.t('dashboard.searchPlaceholder')}">
             </div>
           </div>
           <div class="col-md-2 mb-3">
             <select class="form-select" id="statusFilter">
-              <option value="">All Status</option>
-              <option value="${ItemStatus.AVAILABLE}">Available</option>
-              <option value="${ItemStatus.ON_LOAN}">On Loan</option>
-              <option value="${ItemStatus.MAINTENANCE}">Maintenance</option>
-              <option value="${ItemStatus.RETIRED}">Retired</option>
+              <option value="">${i18nService.t('dashboard.allStatus')}</option>
+              <option value="${ItemStatus.AVAILABLE}">${i18nService.t('dashboard.available')}</option>
+              <option value="${ItemStatus.ON_LOAN}">${i18nService.t('dashboard.onLoan')}</option>
+              <option value="${ItemStatus.MAINTENANCE}">${i18nService.t('dashboard.maintenance')}</option>
+              <option value="${ItemStatus.RETIRED}">${i18nService.t('dashboard.retired')}</option>
             </select>
           </div>
           <div class="col-md-3 mb-3">
             <select class="form-select" id="locationFilter">
-              <option value="">All Locations</option>
+              <option value="">${i18nService.t('dashboard.allLocations')}</option>
               ${this.getUniqueLocations().map(loc => `<option value="${loc}">${loc}</option>`).join('')}
             </select>
           </div>
           <div class="col-md-2 mb-3 d-flex align-items-center">
              <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" role="switch" id="groupByProductToggle" ${this.isGrouped ? 'checked' : ''}>
-                <label class="form-check-label" for="groupByProductToggle">Group Products</label>
+                <label class="form-check-label" for="groupByProductToggle">${i18nService.t('dashboard.groupProducts')}</label>
              </div>
           </div>
         </div>
@@ -133,12 +134,12 @@ export class DashboardComponent {
               <table class="table table-hover align-middle">
                 <thead class="table-light">
                   <tr>
-                    <th>Name</th>
-                    <th>Location</th>
-                    <th>Quantity</th>
-                    <th>Tags</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th>${i18nService.t('common.name')}</th>
+                    <th>${i18nService.t('common.location')}</th>
+                    <th>${i18nService.t('common.quantity')}</th>
+                    <th>${i18nService.t('common.tags')}</th>
+                    <th>${i18nService.t('common.status')}</th>
+                    <th>${i18nService.t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody id="itemsTableBody">
@@ -170,7 +171,7 @@ export class DashboardComponent {
         <tr>
           <td colspan="6" class="text-center text-muted py-4">
             <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-            <p class="mt-2">No items found</p>
+            <p class="mt-2">${i18nService.t('dashboard.noItems')}</p>
           </td>
         </tr>
       `;
@@ -210,7 +211,7 @@ export class DashboardComponent {
     // View Loans button (visible to admins only)
     if (isAdmin) {
       buttons.push(`
-        <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="View Loans">
+        <button class="btn btn-sm btn-info view-loans-btn text-white" data-item-id="${item._id}" title="${i18nService.t('common.viewDetails')}">
           <i class="bi bi-eye"></i>
         </button>
       `);
@@ -220,7 +221,7 @@ export class DashboardComponent {
     if (item.status === ItemStatus.AVAILABLE && item.quantity > 0) {
       buttons.push(`
         <button class="btn btn-sm btn-success request-btn" data-item-id="${item._id}">
-          <i class="bi bi-hand-thumbs-up"></i> Request
+          <i class="bi bi-hand-thumbs-up"></i> ${i18nService.t('common.request')}
         </button>
       `);
     }
@@ -245,12 +246,12 @@ export class DashboardComponent {
    */
   getStatusBadge(status: ItemStatus): string {
     const badges = {
-      [ItemStatus.AVAILABLE]: '<span class="badge bg-success">Available</span>',
-      [ItemStatus.ON_LOAN]: '<span class="badge bg-warning">On Loan</span>',
-      [ItemStatus.MAINTENANCE]: '<span class="badge bg-secondary">Maintenance</span>',
-      [ItemStatus.RETIRED]: '<span class="badge bg-dark">Retired</span>',
+      [ItemStatus.AVAILABLE]: `<span class="badge bg-success">${i18nService.t('dashboard.available')}</span>`,
+      [ItemStatus.ON_LOAN]: `<span class="badge bg-warning">${i18nService.t('dashboard.onLoan')}</span>`,
+      [ItemStatus.MAINTENANCE]: `<span class="badge bg-secondary">${i18nService.t('dashboard.maintenance')}</span>`,
+      [ItemStatus.RETIRED]: `<span class="badge bg-dark">${i18nService.t('dashboard.retired')}</span>`,
     };
-    return badges[status] || '<span class="badge bg-light">Unknown</span>';
+    return badges[status] || `<span class="badge bg-light">${i18nService.t('common.unknown')}</span>`;
   }
 
   /**
@@ -262,34 +263,34 @@ export class DashboardComponent {
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Request Item</h5>
+              <h5 class="modal-title">${i18nService.t('dashboard.requestItem')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
               <form id="requestForm">
                 <input type="hidden" id="requestItemId">
                 <div class="mb-3">
-                  <label class="form-label">Item</label>
+                  <label class="form-label">${i18nService.t('common.item')}</label>
                   <input type="text" class="form-control" id="requestItemName" readonly>
                 </div>
                 <div class="mb-3">
-                  <label for="requestQuantity" class="form-label">Quantity</label>
+                  <label for="requestQuantity" class="form-label">${i18nService.t('common.quantity')}</label>
                   <input type="number" class="form-control" id="requestQuantity" 
                          min="1" value="1" required>
                 </div>
                 <div class="mb-3">
-                  <label for="expectedReturnDate" class="form-label">Expected Return Date</label>
+                  <label for="expectedReturnDate" class="form-label">${i18nService.t('dashboard.expectedReturnDate')}</label>
                   <input type="date" class="form-control" id="expectedReturnDate" required>
                 </div>
                 <div class="mb-3">
-                  <label for="requestNotes" class="form-label">Notes (Optional)</label>
+                  <label for="requestNotes" class="form-label">${i18nService.t('common.notes')} (Optional)</label>
                   <textarea class="form-control" id="requestNotes" rows="3"></textarea>
                 </div>
               </form>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-primary" id="submitRequestBtn">Submit Request</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.cancel')}</button>
+              <button type="button" class="btn btn-primary" id="submitRequestBtn">${i18nService.t('common.submit')}</button>
             </div>
           </div>
         </div>
@@ -306,14 +307,14 @@ export class DashboardComponent {
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Loan Note</h5>
+              <h5 class="modal-title">${i18nService.t('common.notes')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
               <p id="dashboardNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -330,7 +331,7 @@ export class DashboardComponent {
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Item Loan History</h5>
+              <h5 class="modal-title">${i18nService.t('dashboard.itemLoanHistory')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -339,22 +340,22 @@ export class DashboardComponent {
                 <table class="table table-sm table-hover">
                   <thead class="table-light">
                     <tr>
-                      <th>User</th>
-                      <th>Qty</th>
-                      <th>Status</th>
-                      <th>Requested</th>
-                      <th>Returned</th>
-                      <th>Note</th>
+                      <th>${i18nService.t('common.user')}</th>
+                      <th>${i18nService.t('common.quantity')}</th>
+                      <th>${i18nService.t('common.status')}</th>
+                      <th>${i18nService.t('dashboard.requested')}</th>
+                      <th>${i18nService.t('dashboard.returned')}</th>
+                      <th>${i18nService.t('common.notes')}</th>
                     </tr>
                   </thead>
                   <tbody id="itemLoansTableBody">
-                    <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                    <tr><td colspan="6" class="text-center">${i18nService.t('common.loading')}</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -372,7 +373,7 @@ export class DashboardComponent {
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Product Details</h5>
+              <h5 class="modal-title">${i18nService.t('dashboard.productDetails')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -381,24 +382,24 @@ export class DashboardComponent {
               <div class="row mb-4">
                  <div class="col-md-6">
                     <div class="card">
-                        <div class="card-header bg-light">Inventory Breakdown</div>
+                        <div class="card-header bg-light">${i18nService.t('dashboard.inventoryBreakdown')}</div>
                         <ul class="list-group list-group-flush" id="productInventoryList">
-                            <li class="list-group-item">Loading...</li>
+                            <li class="list-group-item">${i18nService.t('common.loading')}</li>
                         </ul>
                     </div>
                  </div>
                  <div class="col-md-6">
                     <div class="card">
-                        <div class="card-header bg-light">Active Loans Summary</div>
+                        <div class="card-header bg-light">${i18nService.t('dashboard.activeLoansSummary')}</div>
                         <ul class="list-group list-group-flush" id="productLoansList">
-                            <li class="list-group-item">Loading...</li>
+                            <li class="list-group-item">${i18nService.t('common.loading')}</li>
                         </ul>
                     </div>
                  </div>
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -438,16 +439,16 @@ export class DashboardComponent {
                 <strong>${this.escapeHtml(groupId)}</strong>
             </td>
             <td>${this.escapeHtml(locations)}</td>
-            <td><span class="badge bg-primary">${totalQty} Total</span></td>
+            <td><span class="badge bg-primary">${totalQty} ${i18nService.t('dashboard.total')}</span></td>
              <td>
               ${allTags.map(tag => 
                 `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
               ).join('')}
             </td>
-            <td><span class="badge bg-info">Grouped</span></td>
+            <td><span class="badge bg-info">${i18nService.t('dashboard.grouped')}</span></td>
             <td>
                 <button class="btn btn-sm btn-primary view-group-details-btn" data-group-id="${groupId}">
-                    <i class="bi bi-eye"></i> View Details
+                    <i class="bi bi-eye"></i> ${i18nService.t('common.viewDetails')}
                 </button>
             </td>
           </tr>
@@ -481,7 +482,7 @@ export class DashboardComponent {
      }
      
      if (html === '') {
-        return `<tr><td colspan="6" class="text-center py-4">No items found</td></tr>`;
+        return `<tr><td colspan="6" class="text-center py-4">${i18nService.t('dashboard.noItems')}</td></tr>`;
      }
 
      return html;
@@ -558,11 +559,11 @@ export class DashboardComponent {
             (btn as HTMLElement).onclick = async (e) => {
                 e.stopPropagation();
                 if (itemId) {
-                     if (!confirm('Are you sure you want to delete this item?')) return;
+                     if (!confirm(i18nService.t('dashboard.deleteConfirm'))) return;
                      
                      try {
                         await firestoreService.deleteItem(itemId);
-                        this.showSuccess('Item deleted successfully');
+                        this.showSuccess(i18nService.t('dashboard.itemDeleted'));
                         
                         // Refresh data
                         await this.loadItems();
@@ -578,7 +579,7 @@ export class DashboardComponent {
                         }
                      } catch (error) {
                         console.error('Error deleting item:', error);
-                        this.showError('Failed to delete item.');
+                        this.showError(i18nService.t('common.error'));
                      }
                 }
             };
@@ -606,7 +607,7 @@ export class DashboardComponent {
         return;
      }
 
-     if (loansList) loansList.innerHTML = '<li class="list-group-item">Loading loans...</li>';
+     if (loansList) loansList.innerHTML = `<li class="list-group-item">${i18nService.t('common.loading')}</li>`;
 
      try {
         // We need to fetch loans for EACH item ID in the group
@@ -619,7 +620,7 @@ export class DashboardComponent {
         
         if (loansList) {
             if (activeLoans.length === 0) {
-                loansList.innerHTML = '<li class="list-group-item text-muted">No active loans.</li>';
+                loansList.innerHTML = `<li class="list-group-item text-muted">${i18nService.t('dashboard.noItems')}</li>`;
             } else {
                 // Group by user for cleaner display
                 const loansByUser: {[key: string]: number} = {};
@@ -631,7 +632,7 @@ export class DashboardComponent {
                 loansList.innerHTML = Object.keys(loansByUser).map(userName => `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-person"></i> ${this.escapeHtml(userName)}</span>
-                        <span class="badge bg-warning text-dark rounded-pill">${loansByUser[userName]} on loan</span>
+                        <span class="badge bg-warning text-dark rounded-pill">${loansByUser[userName]} ${i18nService.t('dashboard.onLoan')}</span>
                     </li>
                 `).join('');
             }
@@ -639,7 +640,7 @@ export class DashboardComponent {
 
      } catch (error) {
         console.error('Error fetching group loans:', error);
-        if (loansList) loansList.innerHTML = '<li class="list-group-item text-danger">Failed to load loans.</li>';
+        if (loansList) loansList.innerHTML = `<li class="list-group-item text-danger">${i18nService.t('common.error')}</li>`;
      }
   }
 
@@ -766,10 +767,10 @@ export class DashboardComponent {
     modal.show();
 
     const titleEl = document.getElementById('itemLoansTitle');
-    if (titleEl) titleEl.textContent = `Loans for: ${item.name}`;
+    if (titleEl) titleEl.textContent = `${i18nService.t('myLoans.title')}: ${item.name}`;
 
     const tbody = document.getElementById('itemLoansTableBody');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>`;
 
     try {
       const loans = await firestoreService.getLoansByItem(itemId);
@@ -777,7 +778,7 @@ export class DashboardComponent {
       if (!tbody) return;
 
       if (loans.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No history found for this item.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${i18nService.t('dashboard.noItems')}</td></tr>`;
         return;
       }
 
@@ -799,7 +800,7 @@ export class DashboardComponent {
              ${loan.notes ? `
               <button class="btn btn-sm btn-outline-info view-loan-note-btn" 
                       data-note="${this.escapeHtml(loan.notes)}">
-                <i class="bi bi-sticky"></i> Note
+                <i class="bi bi-sticky"></i> ${i18nService.t('common.notes')}
               </button>
              ` : '<span class="text-muted">-</span>'}
           </td>
@@ -816,7 +817,7 @@ export class DashboardComponent {
 
     } catch (error) {
       console.error('Error fetching item loans:', error);
-      if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load history.</td></tr>';
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${i18nService.t('common.error')}</td></tr>`;
     }
   }
 
@@ -904,7 +905,7 @@ export class DashboardComponent {
   async handleRequestSubmit(): Promise<void> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
-      this.showError('You must be logged in to request items');
+      this.showError(i18nService.t('dashboard.loginRequired'));
       return;
     }
 
@@ -917,7 +918,7 @@ export class DashboardComponent {
     
     // Validate expected return date
     if (!expectedReturnDateValue) {
-      this.showError('Please select an expected return date');
+      this.showError(i18nService.t('dashboard.selectDate'));
       return;
     }
     
@@ -925,12 +926,12 @@ export class DashboardComponent {
     
     // Validate the date is valid and in the future
     if (isNaN(expectedReturnDate.getTime())) {
-      this.showError('Invalid return date');
+      this.showError(i18nService.t('dashboard.invalidDate'));
       return;
     }
     
     if (expectedReturnDate <= new Date()) {
-      this.showError('Return date must be in the future');
+      this.showError(i18nService.t('dashboard.futureDate'));
       return;
     }
     
@@ -948,7 +949,7 @@ export class DashboardComponent {
         notes,
       });
 
-      this.showSuccess('Request submitted successfully!');
+      this.showSuccess(i18nService.t('dashboard.requestSubmitted'));
       
       // Close modal
       const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('requestModal'));
@@ -959,7 +960,7 @@ export class DashboardComponent {
       this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error submitting request:', error);
-      this.showError('Failed to submit request. Please try again.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -971,7 +972,7 @@ export class DashboardComponent {
     (document.getElementById('itemForm') as HTMLFormElement).reset();
     (document.getElementById('itemId') as HTMLInputElement).value = '';
     (document.getElementById('itemGroupId') as HTMLInputElement).value = '';
-    (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Add New Item';
+    (document.getElementById('itemModalTitle') as HTMLElement).textContent = i18nService.t('dashboard.addItem');
     
     // Populate location and category dropdowns
     this.populateLocationDropdown();
@@ -1011,7 +1012,7 @@ export class DashboardComponent {
     (document.getElementById('itemTags') as HTMLInputElement).value = (item.tags || []).join(', ');
     (document.getElementById('itemImageUrl') as HTMLInputElement).value = item.imageUrl || '';
     
-    (document.getElementById('itemModalTitle') as HTMLElement).textContent = 'Edit Item';
+    (document.getElementById('itemModalTitle') as HTMLElement).textContent = i18nService.t('common.edit');
     
     // Show modal
     const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
@@ -1054,7 +1055,7 @@ export class DashboardComponent {
           tags,
           imageUrl
         });
-        this.showSuccess('Item updated successfully');
+        this.showSuccess(i18nService.t('dashboard.itemSaved'));
       } else {
         // Create new item
         await firestoreService.createItem({
@@ -1068,7 +1069,7 @@ export class DashboardComponent {
           tags,
           imageUrl: imageUrl || undefined
         });
-        this.showSuccess('Item added successfully');
+        this.showSuccess(i18nService.t('dashboard.itemSaved'));
       }
 
       // Close modal
@@ -1080,7 +1081,7 @@ export class DashboardComponent {
       this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error saving item:', error);
-      this.showError('Failed to save item. Please try again.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -1088,18 +1089,18 @@ export class DashboardComponent {
    * Delete item
    */
   async deleteItem(itemId: string): Promise<void> {
-    if (!confirm('Are you sure you want to delete this item?')) {
+    if (!confirm(i18nService.t('dashboard.deleteConfirm'))) {
       return;
     }
 
     try {
       await firestoreService.deleteItem(itemId);
-      this.showSuccess('Item deleted successfully');
+      this.showSuccess(i18nService.t('dashboard.itemDeleted'));
       await this.loadItems();
       this.applyFiltersAndSearch();
     } catch (error) {
       console.error('Error deleting item:', error);
-      this.showError('Failed to delete item. Please try again.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 

@@ -7,6 +7,7 @@
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 import type { Loan } from '../types/models';
+import { i18nService } from '../services/i18n.service';
 
 export class MyLoansComponent {
   private authService = getAuthService();
@@ -53,7 +54,7 @@ export class MyLoansComponent {
       );
     } catch (error) {
       console.error('Error loading loans:', error);
-      this.showToast('Failed to load loans', 'danger');
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -66,7 +67,7 @@ export class MyLoansComponent {
       this.container.innerHTML = `
         <div class="alert alert-warning">
           <i class="bi bi-exclamation-triangle"></i>
-          Please sign in to view your loans.
+          ${i18nService.t('dashboard.loginRequired')}
         </div>
       `;
       return;
@@ -77,8 +78,8 @@ export class MyLoansComponent {
         <!-- Header -->
         <div class="row mb-4">
           <div class="col">
-            <h2><i class="bi bi-box-seam"></i> My Loans</h2>
-            <p class="text-muted">Track your borrowed items and request history</p>
+            <h2><i class="bi bi-box-seam"></i> ${i18nService.t('myLoans.title')}</h2>
+            <p class="text-muted">${i18nService.t('myLoans.subtitle')}</p>
           </div>
         </div>
 
@@ -87,27 +88,27 @@ export class MyLoansComponent {
           <div class="col-md-4">
             <div class="card bg-warning text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-clock-history"></i> Pending Requests</h5>
+                <h5 class="card-title"><i class="bi bi-clock-history"></i> ${i18nService.t('myLoans.status.pending')}</h5>
                 <h2 class="mb-0">${this.pendingLoans.length}</h2>
-                <small>Awaiting approval</small>
+                <small>${i18nService.t('myLoans.awaitingApproval')}</small>
               </div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card bg-info text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> Active Loans</h5>
+                <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> ${i18nService.t('myLoans.currentLoans')}</h5>
                 <h2 class="mb-0">${this.activeLoans.length}</h2>
-                <small>Currently borrowed</small>
+                <small>${i18nService.t('myLoans.currentlyBorrowed')}</small>
               </div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="card bg-success text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-archive"></i> History</h5>
+                <h5 class="card-title"><i class="bi bi-archive"></i> ${i18nService.t('myLoans.loanHistory')}</h5>
                 <h2 class="mb-0">${this.historyLoans.length}</h2>
-                <small>Completed loans</small>
+                <small>${i18nService.t('myLoans.completedLoans')}</small>
               </div>
             </div>
           </div>
@@ -118,21 +119,21 @@ export class MyLoansComponent {
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="active-tab" data-bs-toggle="tab" 
                     data-bs-target="#active" type="button" role="tab">
-              Active Loans
+              ${i18nService.t('myLoans.currentLoans')}
               ${this.activeLoans.length > 0 ? `<span class="badge bg-info ms-2">${this.activeLoans.length}</span>` : ''}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="pending-tab" data-bs-toggle="tab" 
                     data-bs-target="#pending" type="button" role="tab">
-              Pending Requests
+              ${i18nService.t('myLoans.status.pending')}
               ${this.pendingLoans.length > 0 ? `<span class="badge bg-warning ms-2">${this.pendingLoans.length}</span>` : ''}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="history-tab" data-bs-toggle="tab" 
                     data-bs-target="#history" type="button" role="tab">
-              History
+              ${i18nService.t('myLoans.loanHistory')}
             </button>
           </li>
         </ul>
@@ -168,14 +169,14 @@ export class MyLoansComponent {
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Loan Note</h5>
+              <h5 class="modal-title">${i18nService.t('common.notes')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
               <p id="myLoansNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -204,8 +205,8 @@ export class MyLoansComponent {
     if (this.activeLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> You don't have any active loans.
-          <a href="#" class="alert-link" onclick="window.app.navigate('dashboard')">Browse items</a> to make a request.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('myLoans.noCurrent')}
+          <a href="#" class="alert-link" onclick="window.app.navigate('dashboard')">${i18nService.t('common.viewDetails')}</a>
         </div>
       `;
     }
@@ -217,12 +218,12 @@ export class MyLoansComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Quantity</th>
-                  <th>Approved Date</th>
-                  <th>Expected Return</th>
-                  <th>Days Out</th>
-                  <th>Status</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('admin.approvedDate')}</th>
+                  <th>${i18nService.t('dashboard.expectedReturnDate')}</th>
+                  <th>${i18nService.t('admin.daysOut')}</th>
+                  <th>${i18nService.t('common.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,7 +252,7 @@ export class MyLoansComponent {
             <br>
             <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> View Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.viewDetails')}
             </button>
           ` : ''}
         </td>
@@ -259,10 +260,10 @@ export class MyLoansComponent {
         <td>${this.formatDate(loan.approvedAt || loan.requestedAt)}</td>
         <td>
           ${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}
-          ${isOverdue ? '<br><span class="badge bg-danger">OVERDUE</span>' : ''}
+          ${isOverdue ? `<br><span class="badge bg-danger">${i18nService.t('admin.overdue')}</span>` : ''}
         </td>
-        <td><span class="badge bg-info">${daysOut} days</span></td>
-        <td><span class="badge bg-success">Active</span></td>
+        <td><span class="badge bg-info">${daysOut} ${i18nService.t('admin.daysOut')}</span></td>
+        <td><span class="badge bg-success">${i18nService.t('myLoans.status.approved')}</span></td>
       </tr>
     `;
   }
@@ -274,7 +275,7 @@ export class MyLoansComponent {
     if (this.pendingLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> You don't have any pending requests.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('admin.noPending')}
         </div>
       `;
     }
@@ -286,11 +287,11 @@ export class MyLoansComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Quantity</th>
-                  <th>Requested Date</th>
-                  <th>Expected Return</th>
-                  <th>Status</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('admin.requestedDate')}</th>
+                  <th>${i18nService.t('dashboard.expectedReturnDate')}</th>
+                  <th>${i18nService.t('common.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,14 +316,14 @@ export class MyLoansComponent {
             <br>
             <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> View Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.viewDetails')}
             </button>
           ` : ''}
         </td>
         <td><span class="badge bg-secondary">${loan.quantity}</span></td>
         <td>${this.formatDate(loan.requestedAt)}</td>
         <td>${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}</td>
-        <td><span class="badge bg-warning">Pending Review</span></td>
+        <td><span class="badge bg-warning">${i18nService.t('myLoans.status.pending')}</span></td>
       </tr>
     `;
   }
@@ -334,7 +335,7 @@ export class MyLoansComponent {
     if (this.historyLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> You don't have any loan history yet.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('myLoans.noHistory')}
         </div>
       `;
     }
@@ -346,11 +347,11 @@ export class MyLoansComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Quantity</th>
-                  <th>Requested</th>
-                  <th>Duration</th>
-                  <th>Status</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('admin.requestedDate')}</th>
+                  <th>${i18nService.t('admin.duration')}</th>
+                  <th>${i18nService.t('common.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -372,8 +373,8 @@ export class MyLoansComponent {
       : 'N/A';
     
     const statusBadge = loan.status === 'returned'
-      ? '<span class="badge bg-success">Returned</span>'
-      : '<span class="badge bg-danger">Rejected</span>';
+      ? `<span class="badge bg-success">${i18nService.t('myLoans.status.returned')}</span>`
+      : `<span class="badge bg-danger">${i18nService.t('myLoans.status.rejected')}</span>`;
 
     const wasOverdue = loan.status === 'returned' && 
                        loan.expectedReturnDate && 
@@ -389,7 +390,7 @@ export class MyLoansComponent {
             <br>
             <button class="btn btn-sm btn-outline-info view-note-btn mt-1" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> View Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.viewDetails')}
             </button>
           ` : ''}
         </td>
@@ -397,7 +398,7 @@ export class MyLoansComponent {
         <td><small>${this.formatDate(loan.requestedAt)}</small></td>
         <td>
           ${duration}
-          ${wasOverdue ? '<br><span class="badge bg-warning">Was Late</span>' : ''}
+          ${wasOverdue ? `<br><span class="badge bg-warning">${i18nService.t('admin.wasOverdue')}</span>` : ''}
         </td>
         <td>${statusBadge}</td>
       </tr>
