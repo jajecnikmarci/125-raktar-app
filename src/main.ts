@@ -9,6 +9,7 @@ import { AdminPanelComponent } from './components/admin-panel.component';
 import { MyLoansComponent } from './components/my-loans.component';
 import { SettingsComponent } from './components/settings.component';
 import { User } from './types/models';
+import { i18nService } from './services/i18n.service';
 
 import { firestoreService } from './services/firestore.service';
 
@@ -24,6 +25,9 @@ class App {
    * Initialize application
    */
   private init(): void {
+    // Translate static UI elements
+    i18nService.translatePage();
+
     // Set up authentication listeners
     window.addEventListener('authStateChanged', ((e: CustomEvent) => {
       this.handleAuthStateChange(e.detail.user);
@@ -61,6 +65,14 @@ class App {
         await this.handleRoleRequest();
       });
     }
+
+    const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
+    if (languageSelect) {
+      languageSelect.addEventListener('change', (e) => {
+        const newLocale = (e.target as HTMLSelectElement).value as 'hu' | 'en';
+        i18nService.setLocale(newLocale);
+      });
+    }
   }
 
   /**
@@ -75,13 +87,19 @@ class App {
     const name = document.getElementById('profileName');
     const email = document.getElementById('profileEmail');
     const role = document.getElementById('profileRole');
+    const languageSelect = document.getElementById('languageSelect') as HTMLSelectElement;
     
     if (avatar) avatar.src = user.photoURL || 'https://via.placeholder.com/100';
     if (name) name.textContent = user.displayName;
     if (email) email.textContent = user.email;
     if (role) {
-      role.textContent = user.role.toUpperCase();
+      role.textContent = i18nService.t(`common.roles.${user.role}`);
       role.className = `badge ${user.role === 'admin' || user.role === 'keeper' ? 'bg-danger' : 'bg-primary'}`;
+    }
+
+    // Set current language
+    if (languageSelect) {
+      languageSelect.value = i18nService.getLocale();
     }
 
     // Load role request history
@@ -89,7 +107,7 @@ class App {
     const historyBody = document.getElementById('roleRequestTableBody');
     
     if (historySection && historyBody) {
-      historyBody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+      historyBody.innerHTML = `<tr><td colspan="3" class="text-center">${i18nService.t('common.loading')}</td></tr>`;
       historySection.style.display = 'block';
       
       try {
@@ -100,10 +118,10 @@ class App {
         } else {
           historyBody.innerHTML = requests.map(req => `
             <tr>
-              <td>${req.requestedRole}</td>
+              <td>${i18nService.t(`common.roles.${req.requestedRole}`)}</td>
               <td>
                 <span class="badge bg-${req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'danger' : 'warning'}">
-                  ${req.status}
+                  ${i18nService.t(`common.statuses.${req.status}`)}
                 </span>
               </td>
               <td>${new Date(req.requestedAt).toLocaleDateString()}</td>
@@ -112,7 +130,7 @@ class App {
         }
       } catch (error) {
         console.error('Error loading role requests:', error);
-        historyBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load history</td></tr>';
+        historyBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">${i18nService.t('common.error')}</td></tr>`;
       }
     }
 
@@ -133,13 +151,13 @@ class App {
     const submitBtn = document.querySelector('#roleRequestForm button[type="submit"]') as HTMLButtonElement;
 
     if (!roleSelect.value) {
-      alert('Please select a role');
+      alert(i18nService.t('common.error'));
       return;
     }
 
     try {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting...';
+      submitBtn.textContent = i18nService.t('common.loading');
 
       await firestoreService.createRoleRequest({
         userId: user._id!,
@@ -149,7 +167,7 @@ class App {
         reason: reasonInput.value
       });
 
-      alert('Role request submitted successfully! An admin will review your request.');
+      alert(i18nService.t('auth.roleRequestSubmitted'));
       
       const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('profileModal'));
       modal?.hide();
@@ -158,10 +176,10 @@ class App {
       reasonInput.value = '';
     } catch (error) {
       console.error('Error submitting role request:', error);
-      alert('Failed to submit request. Please try again.');
+      alert(i18nService.t('auth.roleRequestFailed'));
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit Request';
+      submitBtn.textContent = i18nService.t('common.submit');
     }
   }
 
@@ -209,7 +227,7 @@ class App {
 
     try {
       signInBtn.disabled = true;
-      signInBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
+      signInBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>${i18nService.t('auth.signingIn')}`;
       errorDiv.style.display = 'none';
 
       await this.authService.signInWithGoogle();
@@ -219,22 +237,22 @@ class App {
       console.error('Sign in error:', error);
       
       // Use custom error message if available
-      const errorMessage = error.userMessage || error.message || 'Failed to sign in. Please try again.';
+      const errorMessage = error.userMessage || error.message || i18nService.t('auth.failedSignIn');
       
       errorDiv.innerHTML = `
-        <strong>Sign-in Failed</strong><br>
+        <strong>${i18nService.t('auth.loginError')}</strong><br>
         ${errorMessage}
         <br><br>
         <small>
           <a href="TROUBLESHOOTING.md" target="_blank" class="text-white">
-            <i class="bi bi-question-circle"></i> View Troubleshooting Guide
+            <i class="bi bi-question-circle"></i> ${i18nService.t('auth.troubleshooting')}
           </a>
           | Check browser console (F12) for details
         </small>
       `;
       errorDiv.style.display = 'block';
       signInBtn.disabled = false;
-      signInBtn.innerHTML = '<i class="bi bi-google me-2"></i>Sign in with Google';
+      signInBtn.innerHTML = `<i class="bi bi-google me-2"></i>${i18nService.t('auth.signIn')}`;
     }
   }
 
@@ -247,7 +265,7 @@ class App {
       this.showLogin();
     } catch (error) {
       console.error('Sign out error:', error);
-      alert('Failed to sign out. Please try again.');
+      alert(i18nService.t('auth.failedSignOut'));
     }
   }
 
@@ -327,7 +345,7 @@ class App {
     mainContent.innerHTML = `
       <div class="loading-spinner">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">${i18nService.t('common.loading')}</span>
         </div>
       </div>
     `;
@@ -342,7 +360,7 @@ class App {
           mainContent.innerHTML = `
             <div class="alert alert-danger">
               <i class="bi bi-exclamation-triangle"></i>
-              Access Denied: Admin privileges required.
+              ${i18nService.t('common.accessDenied')}: ${i18nService.t('common.adminRequired')}
             </div>
           `;
           return;
@@ -365,7 +383,7 @@ class App {
       mainContent.innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle"></i>
-          Error loading content. Please refresh the page.
+          ${i18nService.t('common.error')}
         </div>
       `;
     }

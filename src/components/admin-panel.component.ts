@@ -6,6 +6,7 @@
 import { Loan, LoanStatus, RoleRequest, UserRole, User } from '../types/models';
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
+import { i18nService } from '../services/i18n.service';
 
 export class AdminPanelComponent {
   private authService = getAuthService();
@@ -33,7 +34,7 @@ export class AdminPanelComponent {
       this.container.innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle"></i>
-          Access Denied: Admin privileges required.
+          ${i18nService.t('common.accessDenied')}: ${i18nService.t('common.adminRequired')}
         </div>
       `;
       return;
@@ -80,7 +81,7 @@ export class AdminPanelComponent {
       }
     } catch (error) {
       console.error('Error loading loans:', error);
-      this.showError('Failed to load data.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -96,7 +97,7 @@ export class AdminPanelComponent {
         <!-- Header -->
         <div class="row mb-4">
           <div class="col">
-            <h2><i class="bi bi-shield-check"></i> Admin Panel</h2>
+            <h2><i class="bi bi-shield-check"></i> ${i18nService.t('admin.title')}</h2>
           </div>
         </div>
 
@@ -105,7 +106,7 @@ export class AdminPanelComponent {
           <div class="col-md-4 mb-3">
             <div class="card bg-warning text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-clock-history"></i> Pending Requests</h5>
+                <h5 class="card-title"><i class="bi bi-clock-history"></i> ${i18nService.t('admin.pendingRequests')}</h5>
                 <h2 class="mb-0">${this.pendingLoans.length}</h2>
               </div>
             </div>
@@ -113,7 +114,7 @@ export class AdminPanelComponent {
           <div class="col-md-4 mb-3">
             <div class="card bg-info text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> Active Loans</h5>
+                <h5 class="card-title"><i class="bi bi-box-arrow-right"></i> ${i18nService.t('admin.activeLoans')}</h5>
                 <h2 class="mb-0">${this.activeLoans.length}</h2>
               </div>
             </div>
@@ -121,7 +122,7 @@ export class AdminPanelComponent {
           <div class="col-md-4 mb-3">
             <div class="card bg-success text-white">
               <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-check-circle"></i> Returned</h5>
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> ${i18nService.t('admin.returnedLoans')}</h5>
                 <h2 class="mb-0">${this.returnedLoans.length}</h2>
               </div>
             </div>
@@ -133,21 +134,21 @@ export class AdminPanelComponent {
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" 
                     data-bs-target="#pending" type="button" role="tab">
-              Pending Requests
+              ${i18nService.t('admin.pendingRequests')}
               ${this.pendingLoans.length > 0 ? `<span class="badge bg-danger ms-2">${this.pendingLoans.length}</span>` : ''}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="active-tab" data-bs-toggle="tab" 
                     data-bs-target="#active" type="button" role="tab">
-              Active Loans
+              ${i18nService.t('admin.activeLoans')}
               ${this.activeLoans.length > 0 ? `<span class="badge bg-info ms-2">${this.activeLoans.length}</span>` : ''}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="returned-tab" data-bs-toggle="tab" 
                     data-bs-target="#returned" type="button" role="tab">
-              Returned Loans
+              ${i18nService.t('admin.returnedLoans')}
               ${this.returnedLoans.length > 0 ? `<span class="badge bg-success ms-2">${this.returnedLoans.length}</span>` : ''}
             </button>
           </li>
@@ -155,14 +156,14 @@ export class AdminPanelComponent {
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="roles-tab" data-bs-toggle="tab" 
                     data-bs-target="#roles" type="button" role="tab">
-              Role Requests
+              ${i18nService.t('admin.roleRequests')}
               ${this.roleRequests.length > 0 ? `<span class="badge bg-warning ms-2">${this.roleRequests.length}</span>` : ''}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="users-tab" data-bs-toggle="tab" 
                     data-bs-target="#users" type="button" role="tab">
-              User Management
+              ${i18nService.t('admin.userManagement')}
             </button>
           </li>
           ` : ''}
@@ -216,14 +217,14 @@ export class AdminPanelComponent {
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Loan Note</h5>
+              <h5 class="modal-title">${i18nService.t('common.notes')}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
               <p id="adminNoteContent" class="text-break"></p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.close')}</button>
             </div>
           </div>
         </div>
@@ -252,7 +253,7 @@ export class AdminPanelComponent {
     if (this.pendingLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> No pending requests at this time.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('admin.noPending')}
         </div>
       `;
     }
@@ -264,13 +265,13 @@ export class AdminPanelComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Requested By</th>
-                  <th>Quantity</th>
-                  <th>Requested Date</th>
-                  <th>Expected Return</th>
-                  <th>Note</th>
-                  <th>Actions</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('admin.requestedBy')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('admin.requestedDate')}</th>
+                  <th>${i18nService.t('dashboard.expectedReturnDate')}</th>
+                  <th>${i18nService.t('common.notes')}</th>
+                  <th>${i18nService.t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -303,7 +304,7 @@ export class AdminPanelComponent {
           ${loan.notes ? `
             <button class="btn btn-sm btn-outline-info view-note-btn" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.notes')}
             </button>
           ` : '<span class="text-muted">-</span>'}
         </td>
@@ -311,13 +312,13 @@ export class AdminPanelComponent {
           <div class="btn-group" role="group">
             <button class="btn btn-sm btn-success approve-btn" 
                     data-loan-id="${loan._id}" 
-                    title="Approve Request">
-              <i class="bi bi-check-circle"></i> Approve
+                    title="${i18nService.t('admin.approve')}">
+              <i class="bi bi-check-circle"></i> ${i18nService.t('admin.approve')}
             </button>
             <button class="btn btn-sm btn-danger reject-btn" 
                     data-loan-id="${loan._id}" 
-                    title="Reject Request">
-              <i class="bi bi-x-circle"></i> Reject
+                    title="${i18nService.t('admin.reject')}">
+              <i class="bi bi-x-circle"></i> ${i18nService.t('admin.reject')}
             </button>
           </div>
         </td>
@@ -332,7 +333,7 @@ export class AdminPanelComponent {
     if (this.activeLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> No active loans at this time.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('admin.noActive')}
         </div>
       `;
     }
@@ -344,14 +345,14 @@ export class AdminPanelComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Borrowed By</th>
-                  <th>Quantity</th>
-                  <th>Approved Date</th>
-                  <th>Expected Return</th>
-                  <th>Days Out</th>
-                  <th>Note</th>
-                  <th>Actions</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('admin.borrowedBy')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('admin.approvedDate')}</th>
+                  <th>${i18nService.t('dashboard.expectedReturnDate')}</th>
+                  <th>${i18nService.t('admin.daysOut')}</th>
+                  <th>${i18nService.t('common.notes')}</th>
+                  <th>${i18nService.t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -385,22 +386,22 @@ export class AdminPanelComponent {
         <td>${this.formatDate(loan.approvedAt || loan.requestedAt)}</td>
         <td>
           ${loan.expectedReturnDate ? this.formatDate(loan.expectedReturnDate) : 'N/A'}
-          ${isOverdue ? '<span class="badge bg-danger ms-2">OVERDUE</span>' : ''}
+          ${isOverdue ? `<span class="badge bg-danger ms-2">${i18nService.t('admin.overdue')}</span>` : ''}
         </td>
-        <td><span class="badge bg-info">${daysOut} days</span></td>
+        <td><span class="badge bg-info">${daysOut} ${i18nService.t('admin.daysOut')}</span></td>
         <td>
           ${loan.notes ? `
             <button class="btn btn-sm btn-outline-info view-note-btn" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.notes')}
             </button>
           ` : '<span class="text-muted">-</span>'}
         </td>
         <td>
           <button class="btn btn-sm btn-primary return-btn" 
                   data-loan-id="${loan._id}" 
-                  title="Mark as Returned">
-            <i class="bi bi-box-arrow-in-left"></i> Mark Returned
+                  title="${i18nService.t('admin.markReturned')}">
+            <i class="bi bi-box-arrow-in-left"></i> ${i18nService.t('admin.markReturned')}
           </button>
         </td>
       </tr>
@@ -414,7 +415,7 @@ export class AdminPanelComponent {
     if (this.returnedLoans.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> No returned loans yet.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('admin.noReturned')}
         </div>
       `;
     }
@@ -426,14 +427,14 @@ export class AdminPanelComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>Item</th>
-                  <th>Borrowed By</th>
-                  <th>Quantity</th>
-                  <th>Requested</th>
-                  <th>Approved</th>
-                  <th>Returned</th>
-                  <th>Duration</th>
-                  <th>Note</th>
+                  <th>${i18nService.t('common.item')}</th>
+                  <th>${i18nService.t('admin.borrowedBy')}</th>
+                  <th>${i18nService.t('common.quantity')}</th>
+                  <th>${i18nService.t('dashboard.requested')}</th>
+                  <th>${i18nService.t('admin.approvedDate')}</th>
+                  <th>${i18nService.t('dashboard.returned')}</th>
+                  <th>${i18nService.t('admin.duration')}</th>
+                  <th>${i18nService.t('common.notes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -468,14 +469,14 @@ export class AdminPanelComponent {
         <td><small>${this.formatDate(loan.approvedAt || loan.requestedAt)}</small></td>
         <td>
           ${loan.returnedAt ? this.formatDate(loan.returnedAt) : 'N/A'}
-          ${wasOverdue ? '<span class="badge bg-warning ms-2">Was Overdue</span>' : ''}
+          ${wasOverdue ? `<span class="badge bg-warning ms-2">${i18nService.t('admin.wasOverdue')}</span>` : ''}
         </td>
         <td><span class="badge bg-success">${duration}</span></td>
         <td>
           ${loan.notes ? `
             <button class="btn btn-sm btn-outline-info view-note-btn" 
                     data-note="${this.escapeHtml(loan.notes)}">
-              <i class="bi bi-sticky"></i> Note
+              <i class="bi bi-sticky"></i> ${i18nService.t('common.notes')}
             </button>
           ` : '<span class="text-muted">-</span>'}
         </td>
@@ -490,7 +491,7 @@ export class AdminPanelComponent {
     if (this.roleRequests.length === 0) {
       return `
         <div class="alert alert-info">
-          <i class="bi bi-info-circle"></i> No pending role requests.
+          <i class="bi bi-info-circle"></i> ${i18nService.t('admin.noRoleRequests')}
         </div>
       `;
     }
@@ -502,12 +503,12 @@ export class AdminPanelComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>User</th>
-                  <th>Current Role</th>
-                  <th>Requested Role</th>
-                  <th>Reason</th>
-                  <th>Requested Date</th>
-                  <th>Actions</th>
+                  <th>${i18nService.t('common.user')}</th>
+                  <th>${i18nService.t('admin.currentRole')}</th>
+                  <th>${i18nService.t('admin.requestedRole')}</th>
+                  <th>${i18nService.t('common.reason')}</th>
+                  <th>${i18nService.t('admin.requestedDate')}</th>
+                  <th>${i18nService.t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -525,13 +526,13 @@ export class AdminPanelComponent {
                       <div class="btn-group" role="group">
                         <button class="btn btn-sm btn-success approve-role-btn" 
                                 data-request-id="${req._id}" 
-                                title="Approve Request">
-                          <i class="bi bi-check-circle"></i> Approve
+                                title="${i18nService.t('admin.approve')}">
+                          <i class="bi bi-check-circle"></i> ${i18nService.t('admin.approve')}
                         </button>
                         <button class="btn btn-sm btn-danger reject-role-btn" 
                                 data-request-id="${req._id}" 
-                                title="Reject Request">
-                          <i class="bi bi-x-circle"></i> Reject
+                                title="${i18nService.t('admin.reject')}">
+                          <i class="bi bi-x-circle"></i> ${i18nService.t('admin.reject')}
                         </button>
                       </div>
                     </td>
@@ -556,10 +557,10 @@ export class AdminPanelComponent {
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Current Role</th>
-                  <th>Actions</th>
+                  <th>${i18nService.t('common.user')}</th>
+                  <th>${i18nService.t('common.email')}</th>
+                  <th>${i18nService.t('admin.currentRole')}</th>
+                  <th>${i18nService.t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -580,7 +581,7 @@ export class AdminPanelComponent {
                     <td>
                       <div class="dropdown">
                         <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                          Change Role
+                          ${i18nService.t('admin.changeRole')}
                         </button>
                         <ul class="dropdown-menu">
                           <li><a class="dropdown-item user-role-action" href="#" data-user-id="${user._id}" data-role="user">User</a></li>
@@ -606,17 +607,17 @@ export class AdminPanelComponent {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) return;
 
-    if (!confirm(`Are you sure you want to change this user's role to ${newRole.toUpperCase()}?`)) return;
+    if (!confirm(`${i18nService.t('admin.confirmRoleChange')} ${newRole.toUpperCase()}?`)) return;
 
     try {
       await firestoreService.adminUpdateUserRole(userId, newRole, currentUser.uid, currentUser.displayName);
-      this.showSuccess(`User role updated to ${newRole.toUpperCase()}`);
+      this.showSuccess(`${i18nService.t('admin.roleUpdated')} ${newRole.toUpperCase()}`);
       await this.loadLoans(); // Reloads all data including users
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
       console.error('Error updating user role:', error);
-      this.showError('Failed to update user role.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -629,27 +630,27 @@ export class AdminPanelComponent {
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-              <h5 class="modal-title">Reject Loan Request</h5>
+              <h5 class="modal-title">${i18nService.t('admin.rejectLoan')}</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
               <input type="hidden" id="rejectLoanId">
               <div class="mb-3">
                 <label for="rejectReason" class="form-label">
-                  Reason for Rejection (Optional)
+                  ${i18nService.t('admin.rejectReason')}
                 </label>
                 <textarea class="form-control" id="rejectReason" rows="3" 
-                          placeholder="Provide a reason for rejecting this request..."></textarea>
+                          placeholder="${i18nService.t('admin.rejectReason')}..."></textarea>
               </div>
               <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle"></i>
-                This action cannot be undone. The user will be notified of the rejection.
+                ${i18nService.t('admin.rejectWarning')}
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${i18nService.t('common.cancel')}</button>
               <button type="button" class="btn btn-danger" id="confirmRejectBtn">
-                Confirm Rejection
+                ${i18nService.t('admin.confirmReject')}
               </button>
             </div>
           </div>
@@ -738,17 +739,17 @@ export class AdminPanelComponent {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) return;
 
-    if (!confirm('Approve this role request?')) return;
+    if (!confirm(i18nService.t('common.confirm'))) return;
 
     try {
       await firestoreService.approveRoleRequest(requestId, currentUser.uid);
-      this.showSuccess('Role request approved successfully!');
+      this.showSuccess(i18nService.t('admin.roleApproved'));
       await this.loadLoans(); // reloads requests too
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
       console.error('Error approving role:', error);
-      this.showError('Failed to approve role request.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -759,17 +760,17 @@ export class AdminPanelComponent {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) return;
 
-    if (!confirm('Reject this role request?')) return;
+    if (!confirm(i18nService.t('common.confirm'))) return;
 
     try {
       await firestoreService.rejectRoleRequest(requestId, currentUser.uid);
-      this.showSuccess('Role request rejected.');
+      this.showSuccess(i18nService.t('admin.roleRejected'));
       await this.loadLoans(); // reloads requests too
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
       console.error('Error rejecting role:', error);
-      this.showError('Failed to reject role request.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -780,17 +781,17 @@ export class AdminPanelComponent {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) return;
 
-    if (!confirm('Approve this loan request?')) return;
+    if (!confirm(i18nService.t('common.confirm'))) return;
 
     try {
       await firestoreService.approveLoan(loanId, currentUser.uid);
-      this.showSuccess('Loan request approved successfully!');
+      this.showSuccess(i18nService.t('admin.loanApproved'));
       await this.loadLoans();
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
       console.error('Error approving loan:', error);
-      this.showError(error?.message || 'Failed to approve loan request.');
+      this.showError(error?.message || i18nService.t('common.error'));
     }
   }
 
@@ -817,7 +818,7 @@ export class AdminPanelComponent {
 
     try {
       await firestoreService.rejectLoan(loanId, currentUser.uid, reason);
-      this.showSuccess('Loan request rejected.');
+      this.showSuccess(i18nService.t('admin.loanRejected'));
 
       // Close modal
       const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
@@ -828,7 +829,7 @@ export class AdminPanelComponent {
       this.attachEventListeners();
     } catch (error) {
       console.error('Error rejecting loan:', error);
-      this.showError('Failed to reject loan request.');
+      this.showError(i18nService.t('common.error'));
     }
   }
 
@@ -836,17 +837,17 @@ export class AdminPanelComponent {
    * Handle return action
    */
   async handleReturn(loanId: string): Promise<void> {
-    if (!confirm('Mark this item as returned?')) return;
+    if (!confirm(i18nService.t('common.confirm'))) return;
 
     try {
       await firestoreService.returnLoan(loanId);
-      this.showSuccess('Item marked as returned!');
+      this.showSuccess(i18nService.t('admin.itemReturned'));
       await this.loadLoans();
       this.render();
       this.attachEventListeners();
     } catch (error: any) {
       console.error('Error returning loan:', error);
-      this.showError(error?.message || 'Failed to mark item as returned.');
+      this.showError(error?.message || i18nService.t('common.error'));
     }
   }
 
