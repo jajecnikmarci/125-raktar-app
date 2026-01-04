@@ -299,16 +299,16 @@
                 <input type="text" class="form-control" id="itemName" required>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label"><span data-i18n="common.role">Category</span> *</label>
+                <label class="form-label"><span data-i18n="common.category">Category</span> *</label>
                 <select class="form-select" id="itemCategory" required>
-                  <option value="" data-i18n="common.loading">Select a category...</option>
+                  <option value="" data-i18n="common.categoryPlaceholder">Select a category...</option>
                 </select>
               </div>
             </div>
             <div class="mb-3">
-              <label class="form-label" data-i18n="common.tags">Group ID / Product SKU (Optional)</label>
+              <label class="form-label" data-i18n="common.groupId">Group ID / Product SKU (Optional)</label>
               <input type="text" class="form-control" id="itemGroupId" placeholder="e.g. LAPTOP-DELL-XPS15">
-              <div class="form-text">Use the same ID for identical items in different locations to group them on dashboard.</div>
+              <div class="form-text" data-i18n="common.groupIdHelp">Use the same ID for identical items in different locations to group them on dashboard.</div>
             </div>
             <div class="mb-3">
               <label class="form-label" data-i18n="common.description">Description</label>
@@ -322,16 +322,17 @@
               <div class="col-md-4 mb-3">
                 <label class="form-label"><span data-i18n="common.location">Location</span> *</label>
                 <select class="form-select" id="itemLocation" required>
-                  <option value="" data-i18n="common.loading">Select a location...</option>
+                  <option value="" data-i18n="common.locationPlaceholder">Select a location...</option>
                 </select>
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label"><span data-i18n="common.status">Status</span> *</label>
                 <select class="form-select" id="itemStatus" required>
-                  <option value="available" data-i18n="dashboard.available">Available</option>
-                  <option value="low_stock">Low Stock</option>
-                  <option value="out_of_stock">Out of Stock</option>
-                  <option value="maintenance" data-i18n="dashboard.maintenance">Maintenance</option>
+                  <option value="available" data-i18n="common.statuses.available">Available</option>
+                  <option value="low_stock" data-i18n="common.statuses.low_stock">Low Stock</option>
+                  <option value="out_of_stock" data-i18n="common.statuses.out_of_stock">Out of Stock</option>
+                  <option value="maintenance" data-i18n="common.statuses.maintenance">Maintenance</option>
+                  <option value="retired" data-i18n="common.statuses.retired">Retired</option>
                 </select>
               </div>
             </div>
@@ -340,7 +341,7 @@
               <input type="text" class="form-control" id="itemTags" placeholder="electronics, laptop, dell">
             </div>
             <div class="mb-3">
-              <label class="form-label">Image URL (optional)</label>
+              <label class="form-label" data-i18n="common.imageUrl">Image URL (optional)</label>
               <input type="url" class="form-control" id="itemImageUrl">
             </div>
           </form>

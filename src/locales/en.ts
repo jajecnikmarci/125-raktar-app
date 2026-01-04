@@ -1,6 +1,6 @@
 export const en = {
   common: {
-    loading: 'Loading...', 
+    loading: 'Loading...',
     cancel: 'Cancel',
     save: 'Save',
     close: 'Close',
@@ -29,6 +29,12 @@ export const en = {
     location: 'Location',
     tags: 'Tags',
     description: 'Description',
+    category: 'Category',
+    categoryPlaceholder: 'Select a category...',
+    locationPlaceholder: 'Select a location...',
+    groupId: 'Group ID / Product SKU (Optional)',
+    groupIdHelp: 'Use the same ID for identical items in different locations to group them on dashboard.',
+    imageUrl: 'Image URL (optional)',
     created: 'Created',
     email: 'Email',
     itemName: 'Item Name',
@@ -46,13 +52,15 @@ export const en = {
       returned: 'Returned',
       available: 'Available',
       on_loan: 'On Loan',
+      low_stock: 'Low Stock',
+      out_of_stock: 'Out of Stock',
       maintenance: 'Maintenance',
       retired: 'Retired',
     }
   },
   auth: {
     signIn: 'Sign in with Google',
-    signingIn: 'Signing in...', 
+    signingIn: 'Signing in...',
     signOut: 'Sign out',
     failedSignIn: 'Failed to sign in. Please try again.',
     failedSignOut: 'Failed to sign out. Please try again.',
@@ -87,7 +95,7 @@ export const en = {
   dashboard: {
     title: 'Inventory Dashboard',
     addItem: 'Add Item',
-    searchPlaceholder: 'Search items by name, description, or tags...', 
+    searchPlaceholder: 'Search items by name, description, or tags...',
     allStatus: 'All Status',
     allLocations: 'All Locations',
     groupProducts: 'Group Products',
@@ -114,6 +122,8 @@ export const en = {
     futureDate: 'Return date must be in the future',
     requested: 'Requested',
     returned: 'Returned',
+    lowStock: 'Low Stock',
+    outOfStock: 'Out of Stock',
   },
   admin: {
     title: 'Admin Panel',
