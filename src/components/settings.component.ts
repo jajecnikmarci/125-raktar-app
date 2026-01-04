@@ -7,26 +7,37 @@
 import { firestoreService } from '../services/firestore.service';
 import { getAuthService } from '../services/auth.service';
 import type { Location, Category } from '../types/models';
+import { i18nService } from '../services/i18n.service';
 
 export class SettingsComponent {
   private locations: Location[] = [];
   private categories: Category[] = [];
+  private container: HTMLElement;
+
+  constructor(containerId: string) {
+    const element = document.getElementById(containerId);
+    if (!element) {
+      throw new Error(`Container ${containerId} not found`);
+    }
+    this.container = element;
+    (window as any).settingsComponent = this; // Make it available globally
+  }
 
   /**
    * Initialize the settings panel
    */
-  async init(): Promise<string> {
+  async init(): Promise<void> {
     const authService = getAuthService();
-    const currentUser = authService.getCurrentUser();
-    const isAdmin = currentUser?.role === 'admin';
+    const isAdmin = authService.isAdmin();
 
     if (!isAdmin) {
-      return `
+      this.container.innerHTML = `
         <div class="alert alert-danger">
           <i class="bi bi-exclamation-triangle"></i>
-          Access denied. Admin privileges required.
+          ${i18nService.t('common.accessDenied')}
         </div>
       `;
+      return;
     }
 
     await Promise.all([
@@ -34,7 +45,8 @@ export class SettingsComponent {
       this.loadCategories()
     ]);
 
-    return this.render();
+    this.render();
+    this.setupEventListeners();
   }
 
   /**
@@ -45,7 +57,7 @@ export class SettingsComponent {
       this.locations = await firestoreService.getLocations(true); // Include inactive
     } catch (error) {
       console.error('Error loading locations:', error);
-      this.showToast('Failed to load locations', 'danger');
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -57,30 +69,30 @@ export class SettingsComponent {
       this.categories = await firestoreService.getCategories(true); // Include inactive
     } catch (error) {
       console.error('Error loading categories:', error);
-      this.showToast('Failed to load categories', 'danger');
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
   /**
    * Render the settings panel
    */
-  private render(): string {
-    return `
+  private render(): void {
+    this.container.innerHTML = `
       <div class="container-fluid py-4">
         <h2 class="mb-4">
-          <i class="bi bi-gear"></i> Settings
+          <i class="bi bi-gear"></i> ${i18nService.t('settings.title')}
         </h2>
 
         <!-- Tabs -->
         <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="locations-tab" data-bs-toggle="tab" data-bs-target="#locations" type="button" role="tab">
-              <i class="bi bi-geo-alt"></i> Locations
+              <i class="bi bi-geo-alt"></i> ${i18nService.t('settings.locations')}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab">
-              <i class="bi bi-tags"></i> Categories
+              <i class="bi bi-tags"></i> ${i18nService.t('settings.categories')}
             </button>
           </li>
         </ul>
@@ -90,20 +102,20 @@ export class SettingsComponent {
           <!-- Locations Tab -->
           <div class="tab-pane fade show active" id="locations" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h4>Manage Locations</h4>
+              <h4>${i18nService.t('settings.manageLocations')}</h4>
               <button class="btn btn-primary" id="addLocationBtn">
-                <i class="bi bi-plus-circle"></i> Add Location
+                <i class="bi bi-plus-circle"></i> ${i18nService.t('settings.addLocation')}
               </button>
             </div>
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>${i18nService.t('common.name')}</th>
+                    <th>${i18nService.t('common.description')}</th>
+                    <th>${i18nService.t('common.status')}</th>
+                    <th>${i18nService.t('common.created')}</th>
+                    <th>${i18nService.t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody id="locationsTableBody">
@@ -116,20 +128,20 @@ export class SettingsComponent {
           <!-- Categories Tab -->
           <div class="tab-pane fade" id="categories" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h4>Manage Categories</h4>
+              <h4>${i18nService.t('settings.manageCategories')}</h4>
               <button class="btn btn-primary" id="addCategoryBtn">
-                <i class="bi bi-plus-circle"></i> Add Category
+                <i class="bi bi-plus-circle"></i> ${i18nService.t('settings.addCategory')}
               </button>
             </div>
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>${i18nService.t('common.name')}</th>
+                    <th>${i18nService.t('common.description')}</th>
+                    <th>${i18nService.t('common.status')}</th>
+                    <th>${i18nService.t('common.created')}</th>
+                    <th>${i18nService.t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody id="categoriesTableBody">
@@ -151,7 +163,7 @@ export class SettingsComponent {
       return `
         <tr>
           <td colspan="5" class="text-center text-muted">
-            No locations found. Click "Add Location" to create one.
+            ${i18nService.t('common.na')}
           </td>
         </tr>
       `;
@@ -163,7 +175,7 @@ export class SettingsComponent {
         <td>${this.escapeHtml(location.description || '-')}</td>
         <td>
           <span class="badge bg-${location.isActive ? 'success' : 'secondary'}">
-            ${location.isActive ? 'Active' : 'Inactive'}
+            ${location.isActive ? i18nService.t('settings.active') : i18nService.t('settings.inactive')}
           </span>
         </td>
         <td>${location.createdAt ? new Date(location.createdAt).toLocaleDateString() : '-'}</td>
@@ -187,7 +199,7 @@ export class SettingsComponent {
       return `
         <tr>
           <td colspan="5" class="text-center text-muted">
-            No categories found. Click "Add Category" to create one.
+            ${i18nService.t('common.na')}
           </td>
         </tr>
       `;
@@ -199,7 +211,7 @@ export class SettingsComponent {
         <td>${this.escapeHtml(category.description || '-')}</td>
         <td>
           <span class="badge bg-${category.isActive ? 'success' : 'secondary'}">
-            ${category.isActive ? 'Active' : 'Inactive'}
+            ${category.isActive ? i18nService.t('settings.active') : i18nService.t('settings.inactive')}
           </span>
         </td>
         <td>${category.createdAt ? new Date(category.createdAt).toLocaleDateString() : '-'}</td>
@@ -219,36 +231,10 @@ export class SettingsComponent {
    * Setup event listeners
    */
   setupEventListeners(): void {
-    // Remove existing listeners by cloning and replacing nodes
-    const addLocationBtn = document.getElementById('addLocationBtn');
-    const addCategoryBtn = document.getElementById('addCategoryBtn');
-    const saveLocationBtn = document.getElementById('saveLocationBtn');
-    const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-
-    // Clone and replace to remove all existing listeners
-    if (addLocationBtn) {
-      const newAddLocationBtn = addLocationBtn.cloneNode(true);
-      addLocationBtn.parentNode?.replaceChild(newAddLocationBtn, addLocationBtn);
-      newAddLocationBtn.addEventListener('click', () => this.openLocationModal());
-    }
-
-    if (addCategoryBtn) {
-      const newAddCategoryBtn = addCategoryBtn.cloneNode(true);
-      addCategoryBtn.parentNode?.replaceChild(newAddCategoryBtn, addCategoryBtn);
-      newAddCategoryBtn.addEventListener('click', () => this.openCategoryModal());
-    }
-
-    if (saveLocationBtn) {
-      const newSaveLocationBtn = saveLocationBtn.cloneNode(true);
-      saveLocationBtn.parentNode?.replaceChild(newSaveLocationBtn, saveLocationBtn);
-      newSaveLocationBtn.addEventListener('click', () => this.handleLocationSave());
-    }
-
-    if (saveCategoryBtn) {
-      const newSaveCategoryBtn = saveCategoryBtn.cloneNode(true);
-      saveCategoryBtn.parentNode?.replaceChild(newSaveCategoryBtn, saveCategoryBtn);
-      newSaveCategoryBtn.addEventListener('click', () => this.handleCategorySave());
-    }
+    document.getElementById('addLocationBtn')?.addEventListener('click', () => this.openLocationModal());
+    document.getElementById('addCategoryBtn')?.addEventListener('click', () => this.openCategoryModal());
+    document.getElementById('saveLocationBtn')?.addEventListener('click', () => this.handleLocationSave());
+    document.getElementById('saveCategoryBtn')?.addEventListener('click', () => this.handleCategorySave());
   }
 
   /**
@@ -260,7 +246,7 @@ export class SettingsComponent {
     const form = document.getElementById('locationForm') as HTMLFormElement;
     
     if (title) {
-      title.textContent = locationId ? 'Edit Location' : 'Add New Location';
+      title.textContent = locationId ? i18nService.t('common.edit') : i18nService.t('settings.addLocation');
     }
 
     // Reset form
@@ -291,7 +277,7 @@ export class SettingsComponent {
     const form = document.getElementById('categoryForm') as HTMLFormElement;
     
     if (title) {
-      title.textContent = categoryId ? 'Edit Category' : 'Add New Category';
+      title.textContent = categoryId ? i18nService.t('common.edit') : i18nService.t('settings.addCategory');
     }
 
     // Reset form
@@ -322,7 +308,7 @@ export class SettingsComponent {
     const description = (document.getElementById('locationDescription') as HTMLTextAreaElement).value.trim();
 
     if (!name) {
-      this.showToast('Please enter a location name', 'warning');
+      this.showToast(i18nService.t('common.error'), 'warning');
       return;
     }
 
@@ -330,11 +316,11 @@ export class SettingsComponent {
       if (locationId) {
         // Update existing
         await firestoreService.updateLocation(locationId, { name, description });
-        this.showToast('Location updated successfully!', 'success');
+        this.showToast(i18nService.t('settings.saved'), 'success');
       } else {
         // Create new
         await firestoreService.createLocation({ name, description, isActive: true });
-        this.showToast('Location created successfully!', 'success');
+        this.showToast(i18nService.t('settings.saved'), 'success');
       }
 
       // Close modal
@@ -346,7 +332,7 @@ export class SettingsComponent {
       this.updateLocationsTable();
     } catch (error) {
       console.error('Error saving location:', error);
-      this.showToast('Failed to save location', 'danger');
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -359,7 +345,7 @@ export class SettingsComponent {
     const description = (document.getElementById('categoryDescription') as HTMLTextAreaElement).value.trim();
 
     if (!name) {
-      this.showToast('Please enter a category name', 'warning');
+      this.showToast(i18nService.t('common.error'), 'warning');
       return;
     }
 
@@ -367,11 +353,11 @@ export class SettingsComponent {
       if (categoryId) {
         // Update existing
         await firestoreService.updateCategory(categoryId, { name, description });
-        this.showToast('Category updated successfully!', 'success');
+        this.showToast(i18nService.t('settings.saved'), 'success');
       } else {
         // Create new
         await firestoreService.createCategory({ name, description, isActive: true });
-        this.showToast('Category created successfully!', 'success');
+        this.showToast(i18nService.t('settings.saved'), 'success');
       }
 
       // Close modal
@@ -383,7 +369,7 @@ export class SettingsComponent {
       this.updateCategoriesTable();
     } catch (error) {
       console.error('Error saving category:', error);
-      this.showToast('Failed to save category', 'danger');
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -405,21 +391,19 @@ export class SettingsComponent {
    * Toggle location active status
    */
   async toggleLocation(locationId: string, activate: boolean): Promise<void> {
-    const action = activate ? 'activate' : 'deactivate';
-    
-    if (!confirm(`Are you sure you want to ${action} this location?`)) {
+    if (!confirm(i18nService.t('settings.deleteConfirm'))) {
       return;
     }
 
     try {
       await firestoreService.updateLocation(locationId, { isActive: activate });
-      this.showToast(`Location ${action}d successfully!`, 'success');
+      this.showToast(i18nService.t('settings.saved'), 'success');
       
       await this.loadLocations();
       this.updateLocationsTable();
     } catch (error) {
-      console.error(`Error ${action}ing location:`, error);
-      this.showToast(`Failed to ${action} location`, 'danger');
+      console.error(`Error updating location:`, error);
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -427,21 +411,19 @@ export class SettingsComponent {
    * Toggle category active status
    */
   async toggleCategory(categoryId: string, activate: boolean): Promise<void> {
-    const action = activate ? 'activate' : 'deactivate';
-    
-    if (!confirm(`Are you sure you want to ${action} this category?`)) {
+    if (!confirm(i18nService.t('settings.deleteConfirm'))) {
       return;
     }
 
     try {
       await firestoreService.updateCategory(categoryId, { isActive: activate });
-      this.showToast(`Category ${action}d successfully!`, 'success');
+      this.showToast(i18nService.t('settings.saved'), 'success');
       
       await this.loadCategories();
       this.updateCategoriesTable();
     } catch (error) {
-      console.error(`Error ${action}ing category:`, error);
-      this.showToast(`Failed to ${action} category`, 'danger');
+      console.error(`Error updating category:`, error);
+      this.showToast(i18nService.t('common.error'), 'danger');
     }
   }
 
@@ -508,9 +490,3 @@ export class SettingsComponent {
     return div.innerHTML;
   }
 }
-
-// Export singleton instance
-export const settingsComponent = new SettingsComponent();
-
-// Make it available globally for onclick handlers
-(window as any).settingsComponent = settingsComponent;

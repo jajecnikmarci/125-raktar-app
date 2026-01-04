@@ -251,6 +251,37 @@ class FirestoreService {
   }
 
   /**
+   * Get loans for a specific item
+   */
+  async getLoansByItem(itemId: string): Promise<Loan[]> {
+    try {
+      const db = await this.getDb();
+      const loansCol = collection(db, 'loans');
+      const loansQuery = query(
+        loansCol, 
+        where('itemId', '==', itemId),
+        orderBy('requestedAt', 'desc')
+      );
+      
+      const loansSnapshot = await getDocs(loansQuery);
+      
+      const loans = loansSnapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        approvedAt: doc.data().approvedAt?.toDate?.() || null,
+        returnedAt: doc.data().returnedAt?.toDate?.() || null,
+        expectedReturnDate: doc.data().expectedReturnDate?.toDate?.() || null
+      })) as Loan[];
+
+      return loans;
+    } catch (error) {
+      console.error('Error fetching item loans:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get loans for a specific user
    */
   async getUserLoans(userId: string): Promise<Loan[]> {
@@ -321,20 +352,46 @@ class FirestoreService {
   }
 
   /**
-   * Approve a loan request
+   * Approve a loan request and decrease inventory quantity
    */
   async approveLoan(loanId: string, adminId: string): Promise<void> {
     try {
       const db = await this.getDb();
       const loanDoc = doc(db, 'loans', loanId);
       
+      // Get the loan details first to know quantity and item
+      const loanSnapshot = await getDoc(loanDoc);
+      if (!loanSnapshot.exists()) {
+        throw new Error('Loan not found');
+      }
+      const loanData = loanSnapshot.data() as Loan;
+
+      // Get the item to check availability
+      const itemDoc = doc(db, 'items', loanData.itemId);
+      const itemSnapshot = await getDoc(itemDoc);
+      if (!itemSnapshot.exists()) {
+        throw new Error('Item not found');
+      }
+      const itemData = itemSnapshot.data() as Item;
+
+      if (itemData.quantity < loanData.quantity) {
+        throw new Error(`Insufficient quantity. Available: ${itemData.quantity}, Requested: ${loanData.quantity}`);
+      }
+
+      // Update item quantity
+      await updateDoc(itemDoc, {
+        quantity: itemData.quantity - loanData.quantity,
+        updatedAt: Timestamp.now()
+      });
+
+      // Approve loan
       await updateDoc(loanDoc, {
         status: 'approved',
         approvedBy: adminId,
         approvedAt: Timestamp.now()
       });
       
-      console.log('✓ Loan approved:', loanId);
+      console.log('✓ Loan approved and inventory updated:', loanId);
     } catch (error) {
       console.error('Error approving loan:', error);
       throw error;
@@ -369,19 +426,44 @@ class FirestoreService {
   }
 
   /**
-   * Mark a loan as returned
+   * Mark a loan as returned and increase inventory quantity
    */
   async returnLoan(loanId: string): Promise<void> {
     try {
       const db = await this.getDb();
       const loanDoc = doc(db, 'loans', loanId);
+
+      // Get the loan details
+      const loanSnapshot = await getDoc(loanDoc);
+      if (!loanSnapshot.exists()) {
+        throw new Error('Loan not found');
+      }
+      const loanData = loanSnapshot.data() as Loan;
+
+      if (loanData.status === 'returned') {
+         throw new Error('Loan is already returned');
+      }
+
+      // Get the item
+      const itemDoc = doc(db, 'items', loanData.itemId);
+      const itemSnapshot = await getDoc(itemDoc);
       
+      // If item still exists, update quantity
+      if (itemSnapshot.exists()) {
+        const itemData = itemSnapshot.data() as Item;
+        await updateDoc(itemDoc, {
+          quantity: itemData.quantity + loanData.quantity,
+          updatedAt: Timestamp.now()
+        });
+      }
+
+      // Mark loan as returned
       await updateDoc(loanDoc, {
         status: 'returned',
         returnedAt: Timestamp.now()
       });
       
-      console.log('✓ Loan returned:', loanId);
+      console.log('✓ Loan returned and inventory updated:', loanId);
     } catch (error) {
       console.error('Error returning loan:', error);
       throw error;
@@ -693,6 +775,173 @@ class FirestoreService {
       console.log('✓ Category deactivated:', categoryId);
     } catch (error) {
       console.error('Error deleting category:', error);
+      throw error;
+    }
+  }
+
+  // ==================== ROLE REQUESTS ====================
+
+  /**
+   * Create a role request
+   */
+  async createRoleRequest(request: Omit<import('../types/models').RoleRequest, '_id' | 'requestedAt' | 'status'>): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const now = Timestamp.now();
+
+      await addDoc(requestsCol, {
+        ...request,
+        status: 'pending',
+        requestedAt: now
+      });
+      
+      console.log('✓ Role request created for:', request.userId);
+    } catch (error) {
+      console.error('Error creating role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all pending role requests
+   */
+  async getRoleRequests(): Promise<import('../types/models').RoleRequest[]> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const q = query(requestsCol, where('status', '==', 'pending'), orderBy('requestedAt', 'desc'));
+      
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date()
+      })) as import('../types/models').RoleRequest[];
+    } catch (error) {
+      console.error('Error fetching role requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get role requests for a specific user
+   */
+  async getUserRoleRequests(userId: string): Promise<import('../types/models').RoleRequest[]> {
+    try {
+      const db = await this.getDb();
+      const requestsCol = collection(db, 'role_requests');
+      const q = query(requestsCol, where('userId', '==', userId), orderBy('requestedAt', 'desc'));
+      
+      const snapshot = await getDocs(q);
+      
+      return snapshot.docs.map(doc => ({
+        _id: doc.id,
+        ...doc.data(),
+        requestedAt: doc.data().requestedAt?.toDate?.() || new Date(),
+        processedAt: doc.data().processedAt?.toDate?.() || undefined
+      })) as import('../types/models').RoleRequest[];
+    } catch (error) {
+      console.error('Error fetching user role requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Approve a role request
+   */
+  async approveRoleRequest(requestId: string, adminId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestDoc = doc(db, 'role_requests', requestId);
+      const requestSnapshot = await getDoc(requestDoc);
+      
+      if (!requestSnapshot.exists()) {
+        throw new Error('Request not found');
+      }
+      
+      const requestData = requestSnapshot.data();
+      
+      // Update user role
+      const userDoc = doc(db, 'users', requestData.userId);
+      await updateDoc(userDoc, {
+        role: requestData.requestedRole
+      });
+
+      // Update request status
+      await updateDoc(requestDoc, {
+        status: 'approved',
+        processedBy: adminId,
+        processedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Role request approved:', requestId);
+    } catch (error) {
+      console.error('Error approving role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reject a role request
+   */
+  async rejectRoleRequest(requestId: string, adminId: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const requestDoc = doc(db, 'role_requests', requestId);
+      
+      await updateDoc(requestDoc, {
+        status: 'rejected',
+        processedBy: adminId,
+        processedAt: Timestamp.now()
+      });
+      
+      console.log('✓ Role request rejected:', requestId);
+    } catch (error) {
+      console.error('Error rejecting role request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin update user role (direct update with auto-approved request)
+   */
+  async adminUpdateUserRole(targetUserId: string, newRole: import('../types/models').UserRole, adminId: string, adminName: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      const userDoc = doc(db, 'users', targetUserId);
+      const userSnapshot = await getDoc(userDoc);
+      
+      if (!userSnapshot.exists()) {
+        throw new Error('User not found');
+      }
+      
+      const userData = userSnapshot.data() as User;
+      const now = Timestamp.now();
+
+      // 1. Create an approved role request record for audit
+      const requestsCol = collection(db, 'role_requests');
+      await addDoc(requestsCol, {
+        userId: targetUserId,
+        userName: userData.displayName,
+        userEmail: userData.email,
+        requestedRole: newRole,
+        status: 'approved',
+        requestedAt: now,
+        processedAt: now,
+        processedBy: adminId,
+        reason: `Changed by admin ${adminName}`
+      });
+
+      // 2. Update user role
+      await updateDoc(userDoc, {
+        role: newRole
+      });
+      
+      console.log(`✓ User ${targetUserId} role updated to ${newRole} by admin`);
+    } catch (error) {
+      console.error('Error updating user role:', error);
       throw error;
     }
   }

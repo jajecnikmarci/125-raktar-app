@@ -93,11 +93,11 @@
       <div class="login-logo">
         <i class="bi bi-box-seam-fill"></i>
       </div>
-      <h2 class="mb-3">Inventory Management</h2>
-      <p class="text-muted mb-4">Sign in to access the inventory and lending system</p>
+      <h2 class="mb-3" data-i18n="dashboard.title">Inventory Management</h2>
+      <p class="text-muted mb-4" data-i18n="auth.signIn">Sign in to access the inventory and lending system</p>
       <button id="googleSignInBtn" class="btn btn-lg btn-primary w-100">
         <i class="bi bi-google me-2"></i>
-        Sign in with Google
+        <span data-i18n="auth.signIn">Sign in with Google</span>
       </button>
       <div id="loginError" class="alert alert-danger mt-3" style="display: none;"></div>
     </div>
@@ -110,13 +110,20 @@
       <div class="container-fluid">
         <a class="navbar-brand" href="#">
           <i class="bi bi-box-seam-fill me-2"></i>
-          Inventory System
+          <span data-i18n="dashboard.title">Inventory System</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
+             <!-- Mobile Navigation Links -->
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="dashboard"><i class="bi bi-grid me-2"></i><span data-i18n="nav.dashboard">Dashboard</span></a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="my-loans"><i class="bi bi-journal-bookmark me-2"></i><span data-i18n="nav.myLoans">My Loans</span></a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="settings" id="mobileSettingsLink" style="display: none;"><i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Settings</span></a></li>
+             <li class="nav-item d-md-none"><a class="nav-link" href="#" data-view="admin" id="mobileAdminLink" style="display: none;"><i class="bi bi-shield-check me-2"></i><span data-i18n="nav.admin">Admin Panel</span></a></li>
+             <li class="nav-item d-md-none"><hr class="dropdown-divider text-white-50"></li>
+             
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" 
                  id="userDropdown" role="button" data-bs-toggle="dropdown">
@@ -124,12 +131,11 @@
                 <span id="userName">User</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#" id="myLoansLink">
-                  <i class="bi bi-list-check me-2"></i>My Loans
+                <li><a class="dropdown-item" href="#" id="profileBtn">
+                  <i class="bi bi-person me-2"></i><span data-i18n="nav.profile">Profile</span>
                 </a></li>
-                <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="#" id="signOutBtn">
-                  <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+                  <i class="bi bi-box-arrow-right me-2"></i><span data-i18n="auth.signOut">Sign Out</span>
                 </a></li>
               </ul>
             </li>
@@ -141,22 +147,25 @@
     <div class="container-fluid">
       <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-2 sidebar">
+        <div class="col-md-2 sidebar d-none d-md-block">
           <nav class="nav nav-pills flex-column">
             <a class="nav-link active" href="#" data-view="dashboard">
-              <i class="bi bi-grid me-2"></i>Dashboard
+              <i class="bi bi-grid me-2"></i><span data-i18n="nav.dashboard">Dashboard</span>
             </a>
-            <a class="nav-link" href="#" data-view="admin" id="adminLink" style="display: none;">
-              <i class="bi bi-shield-check me-2"></i>Admin Panel
+            <a class="nav-link" href="#" data-view="my-loans">
+              <i class="bi bi-journal-bookmark me-2"></i><span data-i18n="nav.myLoans">My Loans</span>
             </a>
             <a class="nav-link" href="#" data-view="settings" id="settingsLink" style="display: none;">
-              <i class="bi bi-gear me-2"></i>Settings
+              <i class="bi bi-gear me-2"></i><span data-i18n="nav.settings">Settings</span>
+            </a>
+            <a class="nav-link" href="#" data-view="admin" id="adminLink" style="display: none;">
+              <i class="bi bi-shield-check me-2"></i><span data-i18n="nav.admin">Admin Panel</span>
             </a>
           </nav>
         </div>
 
         <!-- Main Content -->
-        <div class="col-md-10">
+        <div class="col-md-10 col-12">
           <div id="mainContent"></div>
         </div>
       </div>
@@ -168,38 +177,106 @@
 
   <!-- Modals -->
   
+  <!-- Profile Modal -->
+  <div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="nav.profile">User Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="text-center mb-4">
+            <img id="profileAvatar" src="" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
+            <h4 id="profileName"></h4>
+            <p id="profileEmail" class="text-muted"></p>
+            <span id="profileRole" class="badge bg-primary"></span>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label" data-i18n="auth.language">Language</label>
+            <select class="form-select" id="languageSelect">
+              <option value="hu" data-i18n="auth.languages.hu">Magyar</option>
+              <option value="en" data-i18n="auth.languages.en">English</option>
+            </select>
+          </div>
+
+          <hr>
+          
+          <div id="roleRequestSection">
+            <h5 data-i18n="auth.requestRoleChange">Request Role Change</h5>
+            <p class="text-muted small" data-i18n="auth.selectRoleDescription">Select a role to request access.</p>
+            <form id="roleRequestForm">
+              <div class="mb-3">
+                <label class="form-label" data-i18n="common.role">Role</label>
+                <select class="form-select" id="requestedRole" required>
+                  <option value="" data-i18n="auth.selectRolePlaceholder">Select a role...</option>
+                  <option value="keeper">Keeper</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" data-i18n="common.reason">Reason</label>
+                <textarea class="form-control" id="requestReason" rows="2" data-i18n-placeholder="common.reason"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary w-100" data-i18n="common.submit">Submit Request</button>
+            </form>
+          </div>
+          
+          <hr>
+          
+          <div id="roleRequestHistory" style="display: none;">
+            <h5 data-i18n="auth.roleHistory">Role History</h5>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th data-i18n="common.role">Role</th>
+                    <th data-i18n="common.status">Status</th>
+                    <th data-i18n="common.date">Date</th>
+                  </tr>
+                </thead>
+                <tbody id="roleRequestTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Request Item Modal -->
   <div class="modal fade" id="requestModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Request Item</h5>
+          <h5 class="modal-title" data-i18n="dashboard.requestItem">Request Item</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <form id="requestForm">
             <input type="hidden" id="requestItemId">
             <div class="mb-3">
-              <label class="form-label">Item Name</label>
+              <label class="form-label" data-i18n="common.itemName">Item Name</label>
               <input type="text" class="form-control" id="requestItemName" readonly>
             </div>
             <div class="mb-3">
-              <label class="form-label">Quantity</label>
+              <label class="form-label" data-i18n="common.quantity">Quantity</label>
               <input type="number" class="form-control" id="requestQuantity" min="1" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Expected Return Date</label>
+              <label class="form-label" data-i18n="common.expectedReturnDate">Expected Return Date</label>
               <input type="date" class="form-control" id="expectedReturnDate" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Notes (optional)</label>
+              <label class="form-label" data-i18n="common.notesOptional">Notes (optional)</label>
               <textarea class="form-control" id="requestNotes" rows="3"></textarea>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="submitRequestBtn">Submit Request</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="submitRequestBtn" data-i18n="common.submit">Submit Request</button>
         </div>
       </div>
     </div>
@@ -210,62 +287,68 @@
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="itemModalTitle">Add New Item</h5>
+          <h5 class="modal-title" id="itemModalTitle" data-i18n="dashboard.addItem">Add New Item</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <form id="itemForm">
             <input type="hidden" id="itemId">
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Item Name *</label>
+                <label class="form-label"><span data-i18n="common.itemName">Item Name</span> *</label>
                 <input type="text" class="form-control" id="itemName" required>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label">Category *</label>
+                <label class="form-label"><span data-i18n="common.category">Category</span> *</label>
                 <select class="form-select" id="itemCategory" required>
-                  <option value="">Select a category...</option>
+                  <option value="" data-i18n="common.categoryPlaceholder">Select a category...</option>
                 </select>
               </div>
             </div>
             <div class="mb-3">
-              <label class="form-label">Description</label>
+              <label class="form-label" data-i18n="common.groupId">Group ID / Product SKU (Optional)</label>
+              <input type="text" class="form-control" id="itemGroupId" placeholder="e.g. LAPTOP-DELL-XPS15">
+              <div class="form-text" data-i18n="common.groupIdHelp">Use the same ID for identical items in different locations to group them on dashboard.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" data-i18n="common.description">Description</label>
               <textarea class="form-control" id="itemDescription" rows="2"></textarea>
             </div>
             <div class="row">
               <div class="col-md-4 mb-3">
-                <label class="form-label">Quantity *</label>
+                <label class="form-label"><span data-i18n="common.quantity">Quantity</span> *</label>
                 <input type="number" class="form-control" id="itemQuantity" min="0" required>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">Location *</label>
+                <label class="form-label"><span data-i18n="common.location">Location</span> *</label>
                 <select class="form-select" id="itemLocation" required>
-                  <option value="">Select a location...</option>
+                  <option value="" data-i18n="common.locationPlaceholder">Select a location...</option>
                 </select>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">Status *</label>
+                <label class="form-label"><span data-i18n="common.status">Status</span> *</label>
                 <select class="form-select" id="itemStatus" required>
-                  <option value="available">Available</option>
-                  <option value="low_stock">Low Stock</option>
-                  <option value="out_of_stock">Out of Stock</option>
-                  <option value="maintenance">Maintenance</option>
+                  <option value="available" data-i18n="common.statuses.available">Available</option>
+                  <option value="low_stock" data-i18n="common.statuses.low_stock">Low Stock</option>
+                  <option value="out_of_stock" data-i18n="common.statuses.out_of_stock">Out of Stock</option>
+                  <option value="maintenance" data-i18n="common.statuses.maintenance">Maintenance</option>
+                  <option value="retired" data-i18n="common.statuses.retired">Retired</option>
                 </select>
               </div>
             </div>
             <div class="mb-3">
-              <label class="form-label">Tags (comma separated)</label>
+              <label class="form-label" data-i18n="common.tags">Tags (comma separated)</label>
               <input type="text" class="form-control" id="itemTags" placeholder="electronics, laptop, dell">
             </div>
             <div class="mb-3">
-              <label class="form-label">Image URL (optional)</label>
+              <label class="form-label" data-i18n="common.imageUrl">Image URL (optional)</label>
               <input type="url" class="form-control" id="itemImageUrl">
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="saveItemBtn">Save Item</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveItemBtn" data-i18n="common.save">Save Item</button>
         </div>
       </div>
     </div>
@@ -276,25 +359,25 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="locationModalTitle">Add New Location</h5>
+          <h5 class="modal-title" id="locationModalTitle" data-i18n="settings.addLocation">Add New Location</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <form id="locationForm">
             <input type="hidden" id="locationId">
             <div class="mb-3">
-              <label class="form-label">Location Name *</label>
+              <label class="form-label"><span data-i18n="settings.locationName">Location Name</span> *</label>
               <input type="text" class="form-control" id="locationName" required placeholder="e.g. Office - Desk 5">
             </div>
             <div class="mb-3">
-              <label class="form-label">Description (optional)</label>
-              <textarea class="form-control" id="locationDescription" rows="2" placeholder="Additional details about this location"></textarea>
+              <label class="form-label" data-i18n="common.description">Description (optional)</label>
+              <textarea class="form-control" id="locationDescription" rows="2" data-i18n-placeholder="common.description"></textarea>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="saveLocationBtn">Save Location</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveLocationBtn" data-i18n="common.save">Save Location</button>
         </div>
       </div>
     </div>
@@ -305,25 +388,25 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="categoryModalTitle">Add New Category</h5>
+          <h5 class="modal-title" id="categoryModalTitle" data-i18n="settings.addCategory">Add New Category</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <form id="categoryForm">
             <input type="hidden" id="categoryId">
             <div class="mb-3">
-              <label class="form-label">Category Name *</label>
+              <label class="form-label"><span data-i18n="settings.categoryName">Category Name</span> *</label>
               <input type="text" class="form-control" id="categoryName" required placeholder="e.g. Electronics">
             </div>
             <div class="mb-3">
-              <label class="form-label">Description (optional)</label>
-              <textarea class="form-control" id="categoryDescription" rows="2" placeholder="Additional details about this category"></textarea>
+              <label class="form-label" data-i18n="common.description">Description (optional)</label>
+              <textarea class="form-control" id="categoryDescription" rows="2" data-i18n-placeholder="common.description"></textarea>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="saveCategoryBtn">Save Category</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveCategoryBtn" data-i18n="common.save">Save Category</button>
         </div>
       </div>
     </div>

@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin OR keeper
+    function isAdmin() {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'keeper'];
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allow users to update their own profile EXCEPT role
+      // Allow admins to update anything including role
+      allow update: if isSignedIn() && (
+        (request.auth.uid == userId && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // Items collection
+    match /items/{itemId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Loans collection
+    match /loans/{loanId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      allow create: if isSignedIn() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Locations collection (for dynamic location management)
+    match /locations/{locationId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Categories collection (for dynamic category management)
+    match /categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Role Requests collection
+    match /role_requests/{requestId} {
+      // Admins/Keepers can read all, Users can read their own
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      // Users can create requests for themselves (pending only)
+      // Admins can create requests for anyone (e.g. auto-approved)
+      allow create: if isSignedIn() && (
+                      (request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.status == 'pending') ||
+                      isAdmin()
+                    );
+      // Only admins/keepers can update (approve/reject)
+      allow update: if isAdmin();
+    }
+  }
+}
