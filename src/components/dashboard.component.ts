@@ -189,9 +189,9 @@ export class DashboardComponent {
           <span class="badge bg-secondary">${item.quantity || 0}</span>
         </td>
         <td>
-          ${(item.tags || []).map(tag => 
-            `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
-          ).join('')}
+          ${(item.tags || []).map(tag =>
+      `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
+    ).join('')}
         </td>
         <td>${this.getStatusBadge(item.status)}</td>
         <td>
@@ -424,16 +424,16 @@ export class DashboardComponent {
     });
 
     let html = '';
-    
+
     // Render Groups
     Object.keys(groups).forEach(groupId => {
-        const groupItems = groups[groupId];
-        // Aggregate unique tags from all items in the group
-        const allTags = [...new Set(groupItems.flatMap(i => i.tags || []))];
-        const totalQty = groupItems.reduce((sum, i) => sum + i.quantity, 0);
-        const locations = [...new Set(groupItems.map(i => i.location))].join(', ');
-        
-        html += `
+      const groupItems = groups[groupId];
+      // Aggregate unique tags from all items in the group
+      const allTags = [...new Set(groupItems.flatMap(i => i.tags || []))];
+      const totalQty = groupItems.reduce((sum, i) => sum + i.quantity, 0);
+      const locations = [...new Set(groupItems.map(i => i.location))].join(', ');
+
+      html += `
           <tr class="table-info">
             <td>
                 <strong>${this.escapeHtml(groupId)}</strong>
@@ -441,9 +441,9 @@ export class DashboardComponent {
             <td>${this.escapeHtml(locations)}</td>
             <td><span class="badge bg-primary">${totalQty} ${i18nService.t('dashboard.total')}</span></td>
              <td>
-              ${allTags.map(tag => 
-                `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
-              ).join('')}
+              ${allTags.map(tag =>
+        `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
+      ).join('')}
             </td>
             <td><span class="badge bg-info">${i18nService.t('dashboard.grouped')}</span></td>
             <td>
@@ -456,8 +456,8 @@ export class DashboardComponent {
     });
 
     // Render Singles
-     if (singles.length > 0) {
-        html += singles.map(item => `
+    if (singles.length > 0) {
+      html += singles.map(item => `
           <tr data-item-id="${item._id}">
             <td>
               <strong>${this.escapeHtml(item.name)}</strong>
@@ -469,9 +469,9 @@ export class DashboardComponent {
               <span class="badge bg-secondary">${item.quantity || 0}</span>
             </td>
             <td>
-              ${(item.tags || []).map(tag => 
-                `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
-              ).join('')}
+              ${(item.tags || []).map(tag =>
+        `<span class="badge bg-info me-1">${this.escapeHtml(tag)}</span>`
+      ).join('')}
             </td>
             <td>${this.getStatusBadge(item.status)}</td>
             <td>
@@ -479,34 +479,34 @@ export class DashboardComponent {
             </td>
           </tr>
         `).join('');
-     }
-     
-     if (html === '') {
-        return `<tr><td colspan="6" class="text-center py-4">${i18nService.t('dashboard.noItems')}</td></tr>`;
-     }
+    }
 
-     return html;
+    if (html === '') {
+      return `<tr><td colspan="6" class="text-center py-4">${i18nService.t('dashboard.noItems')}</td></tr>`;
+    }
+
+    return html;
   }
 
   /**
    * Open Product Details Modal (Grouped View)
    */
   async openProductDetails(groupId: string): Promise<void> {
-     // Find all items in this group from ALL items (not just filtered ones)
-     const groupItems = this.allItems.filter(i => i.groupId === groupId);
-     if (groupItems.length === 0) return;
+    // Find all items in this group from ALL items (not just filtered ones)
+    const groupItems = this.allItems.filter(i => i.groupId === groupId);
+    if (groupItems.length === 0) return;
 
-     // Show modal
-     const modal = new (window as any).bootstrap.Modal(document.getElementById('productDetailsModal'));
-     modal.show();
-     
-     const titleEl = document.getElementById('productDetailsTitle');
-     if (titleEl) titleEl.textContent = `Group: ${groupId}`;
-     
-     // Render Inventory Breakdown
-     const inventoryList = document.getElementById('productInventoryList');
-     if (inventoryList) {
-        inventoryList.innerHTML = groupItems.map(item => `
+    // Show modal
+    const modal = new (window as any).bootstrap.Modal(document.getElementById('productDetailsModal'));
+    modal.show();
+
+    const titleEl = document.getElementById('productDetailsTitle');
+    if (titleEl) titleEl.textContent = `Group: ${groupId}`;
+
+    // Render Inventory Breakdown
+    const inventoryList = document.getElementById('productInventoryList');
+    if (inventoryList) {
+      inventoryList.innerHTML = groupItems.map(item => `
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-geo-alt"></i> ${this.escapeHtml(item.location)}</span>
                 <div class="d-flex align-items-center gap-2">
@@ -518,130 +518,130 @@ export class DashboardComponent {
             </li>
         `).join('');
 
-        // Attach event listeners for buttons within the inventory list
-        // We use the specific classes generated by renderActionButtons
-        
-        // View Loans
-        inventoryList.querySelectorAll('.view-loans-btn').forEach(btn => {
-            const itemId = (btn as HTMLElement).dataset.itemId;
-            (btn as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                if (itemId) this.viewLoans(itemId);
-            };
-        });
+      // Attach event listeners for buttons within the inventory list
+      // We use the specific classes generated by renderActionButtons
 
-        // Request
-        inventoryList.querySelectorAll('.request-btn').forEach(btn => {
-            const itemId = (btn as HTMLElement).dataset.itemId;
-            (btn as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                if (itemId) this.openRequestModal(itemId);
-            };
-        });
+      // View Loans
+      inventoryList.querySelectorAll('.view-loans-btn').forEach(btn => {
+        const itemId = (btn as HTMLElement).dataset.itemId;
+        (btn as HTMLElement).onclick = (e) => {
+          e.stopPropagation();
+          if (itemId) this.viewLoans(itemId);
+        };
+      });
 
-        // Edit (Admin only)
-        inventoryList.querySelectorAll('.edit-btn').forEach(btn => {
-            const itemId = (btn as HTMLElement).dataset.itemId;
-            (btn as HTMLElement).onclick = (e) => {
-                e.stopPropagation();
-                if (itemId) {
-                    // Hide details modal to focus on edit
-                    const detailsModal = (window as any).bootstrap.Modal.getInstance(document.getElementById('productDetailsModal'));
-                    detailsModal?.hide();
-                    this.openEditItemForm(itemId);
-                }
-            };
-        });
+      // Request
+      inventoryList.querySelectorAll('.request-btn').forEach(btn => {
+        const itemId = (btn as HTMLElement).dataset.itemId;
+        (btn as HTMLElement).onclick = (e) => {
+          e.stopPropagation();
+          if (itemId) this.openRequestModal(itemId);
+        };
+      });
 
-        // Delete (Admin only)
-        inventoryList.querySelectorAll('.delete-btn').forEach(btn => {
-            const itemId = (btn as HTMLElement).dataset.itemId;
-            (btn as HTMLElement).onclick = async (e) => {
-                e.stopPropagation();
-                if (itemId) {
-                     if (!confirm(i18nService.t('dashboard.deleteConfirm'))) return;
-                     
-                     try {
-                        await firestoreService.deleteItem(itemId);
-                        this.showSuccess(i18nService.t('dashboard.itemDeleted'));
-                        
-                        // Refresh data
-                        await this.loadItems();
-                        this.applyFiltersAndSearch();
-                        
-                        // Refresh this modal or close if empty
-                        const updatedGroupItems = this.allItems.filter(i => i.groupId === groupId);
-                        if (updatedGroupItems.length === 0) {
-                            const detailsModal = (window as any).bootstrap.Modal.getInstance(document.getElementById('productDetailsModal'));
-                            detailsModal?.hide();
-                        } else {
-                            this.openProductDetails(groupId);
-                        }
-                     } catch (error) {
-                        console.error('Error deleting item:', error);
-                        this.showError(i18nService.t('common.error'));
-                     }
-                }
-            };
-        });
-     }
+      // Edit (Admin only)
+      inventoryList.querySelectorAll('.edit-btn').forEach(btn => {
+        const itemId = (btn as HTMLElement).dataset.itemId;
+        (btn as HTMLElement).onclick = (e) => {
+          e.stopPropagation();
+          if (itemId) {
+            // Hide details modal to focus on edit
+            const detailsModal = (window as any).bootstrap.Modal.getInstance(document.getElementById('productDetailsModal'));
+            detailsModal?.hide();
+            this.openEditItemForm(itemId);
+          }
+        };
+      });
 
-     // Fetch and Render Loans
-     const loansList = document.getElementById('productLoansList');
-     
-     if (!this.authService.isAdmin()) {
-        if (loansList) {
-            const card = loansList.closest('.card');
-            if (card && card.parentElement) {
-                (card.parentElement as HTMLElement).style.display = 'none';
+      // Delete (Admin only)
+      inventoryList.querySelectorAll('.delete-btn').forEach(btn => {
+        const itemId = (btn as HTMLElement).dataset.itemId;
+        (btn as HTMLElement).onclick = async (e) => {
+          e.stopPropagation();
+          if (itemId) {
+            if (!confirm(i18nService.t('dashboard.deleteConfirm'))) return;
+
+            try {
+              await firestoreService.deleteItem(itemId);
+              this.showSuccess(i18nService.t('dashboard.itemDeleted'));
+
+              // Refresh data
+              await this.loadItems();
+              this.applyFiltersAndSearch();
+
+              // Refresh this modal or close if empty
+              const updatedGroupItems = this.allItems.filter(i => i.groupId === groupId);
+              if (updatedGroupItems.length === 0) {
+                const detailsModal = (window as any).bootstrap.Modal.getInstance(document.getElementById('productDetailsModal'));
+                detailsModal?.hide();
+              } else {
+                this.openProductDetails(groupId);
+              }
+            } catch (error) {
+              console.error('Error deleting item:', error);
+              this.showError(i18nService.t('common.error'));
             }
+          }
+        };
+      });
+    }
+
+    // Fetch and Render Loans
+    const loansList = document.getElementById('productLoansList');
+
+    if (!this.authService.isAdmin()) {
+      if (loansList) {
+        const card = loansList.closest('.card');
+        if (card && card.parentElement) {
+          (card.parentElement as HTMLElement).style.display = 'none';
         }
-        const inventoryList = document.getElementById('productInventoryList');
-        if (inventoryList) {
-            const card = inventoryList.closest('.card');
-            if (card && card.parentElement) {
-                card.parentElement.classList.remove('col-md-6');
-                card.parentElement.classList.add('col-md-12');
-            }
+      }
+      const inventoryList = document.getElementById('productInventoryList');
+      if (inventoryList) {
+        const card = inventoryList.closest('.card');
+        if (card && card.parentElement) {
+          card.parentElement.classList.remove('col-md-6');
+          card.parentElement.classList.add('col-md-12');
         }
-        return;
-     }
+      }
+      return;
+    }
 
-     if (loansList) loansList.innerHTML = `<li class="list-group-item">${i18nService.t('common.loading')}</li>`;
+    if (loansList) loansList.innerHTML = `<li class="list-group-item">${i18nService.t('common.loading')}</li>`;
 
-     try {
-        // We need to fetch loans for EACH item ID in the group
-        const loanPromises = groupItems.map(item => firestoreService.getLoansByItem(item._id!));
-        const loansArrays = await Promise.all(loanPromises);
-        const allLoans = loansArrays.flat();
-        
-        // Filter only active/approved loans
-        const activeLoans = allLoans.filter(l => l.status === 'approved');
-        
-        if (loansList) {
-            if (activeLoans.length === 0) {
-                loansList.innerHTML = `<li class="list-group-item text-muted">${i18nService.t('dashboard.noItems')}</li>`;
-            } else {
-                // Group by user for cleaner display
-                const loansByUser: {[key: string]: number} = {};
-                activeLoans.forEach(loan => {
-                    if (!loansByUser[loan.userName]) loansByUser[loan.userName] = 0;
-                    loansByUser[loan.userName] += loan.quantity;
-                });
+    try {
+      // We need to fetch loans for EACH item ID in the group
+      const loanPromises = groupItems.map(item => firestoreService.getLoansByItem(item._id!));
+      const loansArrays = await Promise.all(loanPromises);
+      const allLoans = loansArrays.flat();
 
-                loansList.innerHTML = Object.keys(loansByUser).map(userName => `
+      // Filter only active/approved loans
+      const activeLoans = allLoans.filter(l => l.status === 'approved');
+
+      if (loansList) {
+        if (activeLoans.length === 0) {
+          loansList.innerHTML = `<li class="list-group-item text-muted">${i18nService.t('dashboard.noItems')}</li>`;
+        } else {
+          // Group by user for cleaner display
+          const loansByUser: { [key: string]: number } = {};
+          activeLoans.forEach(loan => {
+            if (!loansByUser[loan.userName]) loansByUser[loan.userName] = 0;
+            loansByUser[loan.userName] += loan.quantity;
+          });
+
+          loansList.innerHTML = Object.keys(loansByUser).map(userName => `
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-person"></i> ${this.escapeHtml(userName)}</span>
                         <span class="badge bg-warning text-dark rounded-pill">${loansByUser[userName]} ${i18nService.t('dashboard.onLoan')}</span>
                     </li>
                 `).join('');
-            }
         }
+      }
 
-     } catch (error) {
-        console.error('Error fetching group loans:', error);
-        if (loansList) loansList.innerHTML = `<li class="list-group-item text-danger">${i18nService.t('common.error')}</li>`;
-     }
+    } catch (error) {
+      console.error('Error fetching group loans:', error);
+      if (loansList) loansList.innerHTML = `<li class="list-group-item text-danger">${i18nService.t('common.error')}</li>`;
+    }
   }
 
   /**
@@ -663,13 +663,13 @@ export class DashboardComponent {
       locationFilter.addEventListener('change', () => this.applyFiltersAndSearch());
     }
     if (groupByToggle) {
-        groupByToggle.addEventListener('change', (e) => {
-            this.isGrouped = (e.target as HTMLInputElement).checked;
-            this.render(); // Re-render the whole view to update table structure
-            this.attachEventListeners(); // Re-attach listeners
-        });
+      groupByToggle.addEventListener('change', (e) => {
+        this.isGrouped = (e.target as HTMLInputElement).checked;
+        this.render(); // Re-render the whole view to update table structure
+        this.attachEventListeners(); // Re-attach listeners
+      });
     }
-    
+
     // View Loans buttons
     document.querySelectorAll('.view-loans-btn').forEach(btn => {
       const itemId = (btn as HTMLElement).dataset.itemId;
@@ -737,9 +737,22 @@ export class DashboardComponent {
   openNoteModal(note: string): void {
     const modalEl = document.getElementById('dashboardNoteModal');
     const contentEl = document.getElementById('dashboardNoteContent');
-    
+
     if (modalEl && contentEl) {
       contentEl.textContent = note;
+
+      // Check for other open modals to adjust z-index
+      // We need to be higher than itemLoansModal (which might be 1060) or productDetailsModal (1055)
+      const loansModal = document.getElementById('itemLoansModal');
+      const detailsModal = document.getElementById('productDetailsModal');
+
+      if ((loansModal && loansModal.classList.contains('show')) ||
+        (detailsModal && detailsModal.classList.contains('show'))) {
+        modalEl.style.zIndex = '1070';
+      } else {
+        modalEl.style.zIndex = '';
+      }
+
       const modal = new (window as any).bootstrap.Modal(modalEl);
       modal.show();
     }
@@ -755,13 +768,13 @@ export class DashboardComponent {
     // Show modal
     const modalEl = document.getElementById('itemLoansModal');
     const modal = new (window as any).bootstrap.Modal(modalEl);
-    
+
     // Check if Product Details is open and adjust z-index
     const detailsModal = document.getElementById('productDetailsModal');
     if (detailsModal && detailsModal.classList.contains('show')) {
-        if (modalEl) modalEl.style.zIndex = '1060'; // Higher than default 1055
+      if (modalEl) modalEl.style.zIndex = '1060'; // Higher than default 1055
     } else {
-        if (modalEl) modalEl.style.zIndex = ''; // Reset
+      if (modalEl) modalEl.style.zIndex = ''; // Reset
     }
 
     modal.show();
@@ -774,7 +787,7 @@ export class DashboardComponent {
 
     try {
       const loans = await firestoreService.getLoansByItem(itemId);
-      
+
       if (!tbody) return;
 
       if (loans.length === 0) {
@@ -853,7 +866,7 @@ export class DashboardComponent {
     }
 
     if (searchTerm.length > 0) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchTerm) ||
         item.description?.toLowerCase().includes(searchTerm) ||
         item.location?.toLowerCase().includes(searchTerm) ||
@@ -891,7 +904,7 @@ export class DashboardComponent {
     // Set minimum date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    (document.getElementById('expectedReturnDate') as HTMLInputElement).min = 
+    (document.getElementById('expectedReturnDate') as HTMLInputElement).min =
       tomorrow.toISOString().split('T')[0];
 
     // Show modal (requires Bootstrap JS)
@@ -915,26 +928,26 @@ export class DashboardComponent {
 
     const quantity = parseInt((document.getElementById('requestQuantity') as HTMLInputElement).value);
     const expectedReturnDateValue = (document.getElementById('expectedReturnDate') as HTMLInputElement).value;
-    
+
     // Validate expected return date
     if (!expectedReturnDateValue) {
       this.showError(i18nService.t('dashboard.selectDate'));
       return;
     }
-    
+
     const expectedReturnDate = new Date(expectedReturnDateValue);
-    
+
     // Validate the date is valid and in the future
     if (isNaN(expectedReturnDate.getTime())) {
       this.showError(i18nService.t('dashboard.invalidDate'));
       return;
     }
-    
+
     if (expectedReturnDate <= new Date()) {
       this.showError(i18nService.t('dashboard.futureDate'));
       return;
     }
-    
+
     const notes = (document.getElementById('requestNotes') as HTMLTextAreaElement).value;
 
     try {
@@ -950,7 +963,7 @@ export class DashboardComponent {
       });
 
       this.showSuccess(i18nService.t('dashboard.requestSubmitted'));
-      
+
       // Close modal
       const modal = (window as any).bootstrap.Modal.getInstance(document.getElementById('requestModal'));
       modal?.hide();
@@ -973,15 +986,15 @@ export class DashboardComponent {
     (document.getElementById('itemId') as HTMLInputElement).value = '';
     (document.getElementById('itemGroupId') as HTMLInputElement).value = '';
     (document.getElementById('itemModalTitle') as HTMLElement).textContent = i18nService.t('dashboard.addItem');
-    
+
     // Populate location and category dropdowns
     this.populateLocationDropdown();
     this.populateCategoryDropdown();
-    
+
     // Show modal
     const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
     modal.show();
-    
+
     // Attach save handler
     const saveBtn = document.getElementById('saveItemBtn');
     if (saveBtn) {
@@ -1011,13 +1024,13 @@ export class DashboardComponent {
     (document.getElementById('itemStatus') as HTMLSelectElement).value = item.status;
     (document.getElementById('itemTags') as HTMLInputElement).value = (item.tags || []).join(', ');
     (document.getElementById('itemImageUrl') as HTMLInputElement).value = item.imageUrl || '';
-    
+
     (document.getElementById('itemModalTitle') as HTMLElement).textContent = i18nService.t('common.edit');
-    
+
     // Show modal
     const modal = new (window as any).bootstrap.Modal(document.getElementById('itemModal'));
     modal.show();
-    
+
     // Attach save handler
     const saveBtn = document.getElementById('saveItemBtn');
     if (saveBtn) {
@@ -1142,9 +1155,9 @@ export class DashboardComponent {
     if (!toastContainer) return;
 
     const toastId = `toast-${Date.now()}`;
-    const icon = type === 'success' ? 'check-circle-fill' : 
-                 type === 'danger' ? 'exclamation-triangle-fill' : 
-                 type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
+    const icon = type === 'success' ? 'check-circle-fill' :
+      type === 'danger' ? 'exclamation-triangle-fill' :
+        type === 'warning' ? 'exclamation-circle-fill' : 'info-circle-fill';
 
     const toastHTML = `
       <div id="${toastId}" class="toast align-items-center text-bg-${type} border-0" role="alert">
@@ -1162,7 +1175,7 @@ export class DashboardComponent {
     if (toastElement) {
       const toast = new (window as any).bootstrap.Toast(toastElement, { delay: 3000 });
       toast.show();
-      
+
       // Remove from DOM after hidden
       toastElement.addEventListener('hidden.bs.toast', () => {
         toastElement.remove();
@@ -1178,7 +1191,7 @@ export class DashboardComponent {
     if (!locationSelect) return;
 
     // Clear existing options except the first one
-    locationSelect.innerHTML = '<option value="">Select a location...</option>';
+    locationSelect.innerHTML = `<option value="">${i18nService.t('common.locationPlaceholder')}</option>`;
 
     // Add all active locations
     this.locations.forEach(location => {
@@ -1197,7 +1210,7 @@ export class DashboardComponent {
     if (!categorySelect) return;
 
     // Clear existing options except the first one
-    categorySelect.innerHTML = '<option value="">Select a category...</option>';
+    categorySelect.innerHTML = `<option value="">${i18nService.t('common.categoryPlaceholder')}</option>`;
 
     // Add all active categories
     this.categories.forEach(category => {
